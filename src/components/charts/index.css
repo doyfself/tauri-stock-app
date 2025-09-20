@@ -1,0 +1,57 @@
+.stock-details {
+  margin-left: 10px;
+}
+.stock-details .header {
+  font-size: 24px;
+  font-weight: bold;
+  margin-bottom: 10px;
+  display: flex;
+  gap: 30px;
+}
+.stock-details .price {
+  font-size: 30px;
+  font-weight: bold;
+}
+
+.stock-details ul {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.stock-details > ul > li {
+  margin: 0;
+  padding: 2px 0;
+  width: 20%;
+  font-size: 13px;
+}
+
+.mark-color-ul {
+  display: flex;
+  gap: 2px;
+  align-items: center;
+}
+.mark-color-ul li {
+  display: block;
+  width: 12px;
+  height: 12px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.mark-color-ul li:hover {
+  transform: scale(1.1);
+}
+
+/* 画线start */
+.drawing-button {
+  right: 10px;
+  top: -27px;
+  font-size: 12px;
+  height: 27px;
+  align-items: center;
+  gap: 10px;
+}
+.drawing-button > div {
+  cursor: pointer;
+  color: #1576e8;
+}
+/* 画线end */

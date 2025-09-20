@@ -1,0 +1,40 @@
+.selection-list {
+  border: 1px solid #d9d9d9;
+  width: 200px;
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  color: #000;
+}
+.selection-list-title {
+  text-align: center;
+  line-height: 30px;
+  background-color: #1576e8;
+  color: #fff;
+}
+.selection-list-header {
+  background: #eff3f6;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+  padding: 5px;
+}
+.selection-list ul li {
+  display: flex;
+  justify-content: space-between;
+  padding: 5px;
+  border-bottom: 1px solid #d9d9d9;
+  font-size: 13px;
+}
+.selection-list ul li.active {
+  background: #d8e9fe;
+}
+.selection-list ul li .selection-number {
+  width: 20px;
+}
+.selection-list ul li .selection-number span {
+  color: #1576e8;
+  transform: rotate(90deg);
+  cursor: pointer;
+}

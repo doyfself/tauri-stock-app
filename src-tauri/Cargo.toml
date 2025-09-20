@@ -1,0 +1,37 @@
+[package]
+name = "tauri-app"
+version = "0.1.0"
+description = "A Tauri App"
+authors = ["you"]
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+# The `_lib` suffix may seem redundant but it is necessary
+# to make the lib name unique and wouldn't conflict with the bin name.
+# This seems to be only an issue on Windows, see https://github.com/rust-lang/cargo/issues/8519
+name = "tauri_app_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+tauri-plugin-opener = "2"
+serde = { version = "1", features = ["derive"] }
+rusqlite = "0.30.0" 
+
+# 网络请求（替代 Python 的 requests）
+reqwest = { version = "0.11", features = ["json", "rustls-tls"] }
+# JSON 解析（替代 Python 的 json）
+serde_json = "1.0"
+# 错误处理（统一错误类型）
+thiserror = "1.0"
+# 异步支持（reqwest 异步请求）
+tokio = { version = "1.0", features = ["full"] }
+# 日志（可选，用于调试）
+tauri-plugin-log = "2.7"
+log = "0.4"
+
