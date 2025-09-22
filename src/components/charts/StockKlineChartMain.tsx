@@ -16,7 +16,8 @@ import { mapKlineToSvg, calculateMA } from './util';
 import klineConfig from './config';
 import { Radio } from 'antd';
 import { useEffect, useState, useMemo } from 'react';
-import { getKlineDataApi, type KlineDataItem } from '@/apis/api';
+import { getKlineDataApi } from '@/apis/api';
+import type { KlineDataResponse } from '@/types/response';
 export default function StockKlineChartMain({
   code,
   width,
@@ -24,7 +25,7 @@ export default function StockKlineChartMain({
   timestamp = '',
   limit = 100,
 }: StockKlineChartMainProps) {
-  const [data, setData] = useState<KlineDataItem[]>([]);
+  const [data, setData] = useState<KlineDataResponse[]>([]);
   const [maxPrice, setMaxPrice] = useState<number>(0);
   const [minPrice, setMinPrice] = useState<number>(0);
   const [maData, setMaData] = useState<number[][]>([]); // 用于存储MA数据
@@ -38,28 +39,27 @@ export default function StockKlineChartMain({
     // 存储定时器ID，用于清理
     let intervalId: NodeJS.Timeout;
     // 定义获取K线数据的函数
-    const fetchKlineData = () => {
+    const fetchKlineData = async () => {
       if (code) {
-        getKlineDataApi(code, period, timestamp, limit).then((response) => {
-          if (response && response.data) {
-            let newData = response.data;
-            newData = newData.slice(Math.max(newData.length - 100, 0));
-            setData(newData);
-            setSelectIndex(newData.length - 1);
-            const maxPrice = Math.max(...newData.map((item) => item.high));
-            const minPrice = Math.min(...newData.map((item) => item.low));
-            const coordinateX = newData.map((_, index) => {
-              return (
-                index * (klineConfig.candleMargin + klineConfig.candleWidth) +
-                klineConfig.candleWidth / 2
-              );
-            });
+        const response = await getKlineDataApi(code, period, timestamp, limit);
+        if (response && response.data) {
+          let newData = response.data;
+          newData = newData.slice(Math.max(newData.length - 100, 0));
+          setData(newData);
+          setSelectIndex(newData.length - 1);
+          const maxPrice = Math.max(...newData.map((item) => item.high));
+          const minPrice = Math.min(...newData.map((item) => item.low));
+          const coordinateX = newData.map((_, index) => {
+            return (
+              index * (klineConfig.candleMargin + klineConfig.candleWidth) +
+              klineConfig.candleWidth / 2
+            );
+          });
 
-            setMaxPrice(maxPrice);
-            setMinPrice(minPrice);
-            setCoordinateX(coordinateX);
-          }
-        });
+          setMaxPrice(maxPrice);
+          setMinPrice(minPrice);
+          setCoordinateX(coordinateX);
+        }
       }
     };
 

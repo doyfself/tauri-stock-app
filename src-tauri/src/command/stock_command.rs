@@ -1,25 +1,15 @@
+use crate::db::common::init_database;
 use crate::db::stock_db;
 use crate::requests::get_all_stock;
-use crate::structs::stock_structs::StockError;
-use rusqlite::Connection;
 use tauri::command;
-
-// -------------------------- 1. 初始化数据库连接 --------------------------
-/// 获取数据库连接（复用你之前的 init_db 逻辑，新增股票表初始化）
-fn get_db_connection() -> Result<Connection, StockError> {
-    // 连接数据库（若不存在则创建）
-    let mut conn = Connection::open("all_stocks.db")?;
-    // 初始化股票表（确保表存在）
-    stock_db::init_stock_db(&mut conn)?;
-    Ok(conn)
-}
+use tauri::AppHandle;
 
 // -------------------------- 2. Tauri 命令：爬取并保存所有股票 --------------------------
 /// 前端调用此命令时，触发爬取 + 存储逻辑
 #[command]
-pub async fn crawl_and_save_stocks() -> Result<serde_json::Value, String> {
+pub async fn crawl_and_save_stocks(app: AppHandle) -> Result<serde_json::Value, String> {
     // 1. 爬取所有股票数据
-    let stocks = get_all_stock::crawl_all_stocks()
+    let stocks = get_all_stock::crawl_all_stocks(app.clone())
         .await
         .map_err(|e| e.to_string())?;
     let total_count = stocks.len();
@@ -29,7 +19,8 @@ pub async fn crawl_and_save_stocks() -> Result<serde_json::Value, String> {
     }
     println!("开始爬取数据");
     // 2. 存入数据库
-    let mut conn = get_db_connection().map_err(|e| e.to_string())?;
+    let mut conn =
+        init_database(&app, "all_stocks").map_err(|e| format!("获取数据库连接失败: {}", e))?;
     let saved_count =
         stock_db::batch_upsert_stocks(&mut conn, &stocks).map_err(|e| e.to_string())?;
 
@@ -44,14 +35,17 @@ pub async fn crawl_and_save_stocks() -> Result<serde_json::Value, String> {
 
 /// 模糊查询股票（仅需关键词，返回所有匹配结果）
 #[command]
-pub fn search_stocks_by_keyword(keyword: &str) -> Result<serde_json::Value, String> {
+pub fn search_stocks_by_keyword(
+    app: AppHandle,
+    keyword: &str,
+) -> Result<serde_json::Value, String> {
     // 简单验证关键词（可选，根据需求调整）
     if keyword.trim().is_empty() {
         return Err("查询关键词不能为空".to_string());
     }
 
-    // 获取数据库连接
-    let conn = get_db_connection().map_err(|e| e.to_string())?;
+    let conn =
+        init_database(&app, "all_stocks").map_err(|e| format!("获取数据库连接失败: {}", e))?;
 
     // 执行模糊查询
     let stocks =

@@ -16,7 +16,7 @@ export default function SearchStock() {
     if (!val) return;
     const result = await queryStockByWordApi(val);
     if (result.data)
-      setResult(result.data.map((item) => item['代码'] + ' ' + item['名称']));
+      setResult(result.data.map((item) => item['symbol'] + ' ' + item['name']));
   }, 200);
   const openDrawer = () => {
     setOpen(true);

@@ -1,23 +1,10 @@
-use crate::structs::stock_structs::{StockError, StockItem};
+use crate::structs::stock_structs::StockItem;
+use crate::structs::StockError;
 impl From<StockError> for String {
     fn from(err: StockError) -> Self {
         err.to_string()
     }
 }
-
-// -------------------------- 3. 数据库操作封装 --------------------------
-/// 初始化股票数据库表（若不存在则创建）
-pub fn init_stock_db(conn: &rusqlite::Connection) -> Result<(), StockError> {
-    conn.execute(
-        "CREATE TABLE IF NOT EXISTS all_stocks (
-            symbol TEXT PRIMARY KEY,  -- 股票代码作为主键（避免重复）
-            name TEXT NOT NULL       -- 股票名称
-        )",
-        [],
-    )?;
-    Ok(())
-}
-
 /// 批量插入/更新股票数据（存在则更新名称和时间，不存在则插入）
 pub fn batch_upsert_stocks(
     conn: &mut rusqlite::Connection,
@@ -52,25 +39,47 @@ pub fn fuzzy_search_stocks_by_keyword(
     conn: &rusqlite::Connection,
     keyword: &str,
 ) -> Result<Vec<StockItem>, StockError> {
-    // 构建模糊查询的参数（包含通配符%）
-    let pattern = format!("%{}%", keyword);
+    // 构建查询模式
+    let contain_pattern = format!("%{}%", keyword); // 包含关键词
 
-    // 查询所有符合条件的股票（不限制数量）
+    // 优化的SQL查询：
+    // 1. 忽略前缀(sh/sz)，从第三位开始匹配代码
+    // 2. 优先显示代码中从第三位开始以关键词开头的记录
+    // 3. 其次显示名称以关键词开头的记录
+    // 4. 最后显示其他包含关键词的记录
+    // 5. 限制返回10条结果
     let mut stmt = conn.prepare(
         "SELECT symbol, name 
          FROM all_stocks 
-         WHERE symbol LIKE ?1 OR name LIKE ?1 
-         ORDER BY symbol", // 按股票代码排序
+         WHERE 
+             -- 匹配条件：代码(忽略前缀)或名称包含关键词
+             (SUBSTR(symbol, 3) LIKE ?1) OR  -- 从第三位开始匹配代码
+             name LIKE ?1
+         ORDER BY 
+             -- 优先级1：代码从第三位开始以关键词开头
+             CASE WHEN SUBSTR(symbol, 3) LIKE ?2 THEN 0 ELSE 1 END,
+             -- 优先级2：名称以关键词开头
+             CASE WHEN name LIKE ?2 THEN 0 ELSE 1 END,
+             -- 最后按股票代码排序
+             symbol
+         LIMIT 10",
     )?;
 
+    // 参数说明：
+    // ?1: %keyword% 用于匹配包含关键词的记录
+    // ?2: keyword% 用于匹配以关键词开头的记录
     let stocks = stmt
-        .query_map([pattern.as_str()], |row| {
-            Ok(StockItem {
-                symbol: row.get(0)?,
-                name: row.get(1)?,
-            })
-        })?
-        .collect::<Result<Vec<StockItem>, rusqlite::Error>>()?;
+        .query_map(
+            [contain_pattern.as_str(), format!("{}%", keyword).as_str()],
+            |row| {
+                Ok(StockItem {
+                    symbol: row.get(0)?,
+                    name: row.get(1)?,
+                })
+            },
+        )?
+        .collect::<Result<Vec<StockItem>, rusqlite::Error>>()
+        .map_err(StockError::DbError)?;
 
     Ok(stocks)
 }

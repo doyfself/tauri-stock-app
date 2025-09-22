@@ -10,27 +10,6 @@ pub struct Selection {
     pub sort: i32,
 }
 
-/// 初始化数据库连接并创建表（如果不存在）
-pub fn init_db() -> Result<Connection, String> {
-    // 连接到数据库，如果不存在则创建
-    let conn = Connection::open("selection.db").map_err(|e| e.to_string())?;
-
-    // 创建自选表
-    conn.execute(
-        "CREATE TABLE IF NOT EXISTS selection (
-            code TEXT PRIMARY KEY,
-            name TEXT NOT NULL,
-            color TEXT NOT NULL,
-            remark TEXT NOT NULL,
-            sort INTEGER NOT NULL
-        )",
-        [],
-    )
-    .map_err(|e| e.to_string())?;
-
-    Ok(conn)
-}
-
 /// 获取所有自选项目
 pub fn get_all_selections() -> Result<Vec<Selection>, String> {
     let conn = init_db()?;

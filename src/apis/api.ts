@@ -1,30 +1,25 @@
 import request from '../utils/request';
-type QueryStockByWordResponse = {
-  代码: string;
-  名称: string;
-}[];
+import { invoke } from '@tauri-apps/api/core';
+import * as responseType from '@/types/response';
 export const queryStockByWordApi = (w: string) =>
-  request.get<QueryStockByWordResponse>('/search?w=' + w);
-// 定义 K 线数据类型接口
-export interface KlineDataItem {
-  date: string; // 日期格式：YYYY-MM-DD
-  open: number; // 开盘价
-  high: number; // 最高价
-  low: number; // 最低价
-  close: number; // 收盘价
-  volume: number; // 成交量
-  percent: number; // 涨跌幅
-  turnoverrate: number; // 换手率
-}
+  invoke<responseType.SearchStocksInvokeReturn>('search_stocks_by_keyword', {
+    keyword: w, // 仅需传递关键词
+  });
+// K线数据
 export const getKlineDataApi = (
   code: string,
   period: string,
   timestamp: string,
-  limit: number,
+  limit: number = 100,
 ) =>
-  request.get<KlineDataItem[]>(
-    `/kline?code=${code}&period=${period}&timestamp=${timestamp}&limit=${limit}`,
-  );
+  invoke<responseType.KlineDataInvokeReturn>('get_kline_data', {
+    params: {
+      code,
+      period,
+      timestamp,
+      limit,
+    },
+  });
 // 个股详情
 export interface KlineDetailsType {
   name: string; // 股票名称

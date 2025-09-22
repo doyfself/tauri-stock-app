@@ -1,40 +1,13 @@
-use crate::structs::stock_structs::{StockApiResponse, StockError, StockItem};
-use reqwest::{header, Client};
+use super::common::create_xueqiu_http_client;
+use crate::structs::stock_structs::{StockApiResponse, StockItem};
+use crate::structs::StockError;
+use reqwest::Client;
 use std::time::Duration;
 
 /// 爬取所有 A 股股票数据（分页请求雪球 API）
-pub async fn crawl_all_stocks() -> Result<Vec<StockItem>, StockError> {
-    // 1. 构建客户端时添加完整请求头，模拟真实浏览器
-    let mut headers = header::HeaderMap::new();
-
-    // 关键头信息（从浏览器开发者工具获取）
-    headers.insert(
-        "Accept",
-        header::HeaderValue::from_static(
-            "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
-        ),
-    );
-    headers.insert(
-        "Accept-Language",
-        header::HeaderValue::from_static(
-            "zh-CN,zh;q=0.8,zh-TW;q=0.7,zh-HK;q=0.5,en-US;q=0.3,en;q=0.2",
-        ),
-    );
-    headers.insert(
-        "Referer",
-        header::HeaderValue::from_static("https://xueqiu.com/"),
-    ); // 关键：添加来源页
-    headers.insert("Connection", header::HeaderValue::from_static("keep-alive"));
-    headers.insert(
-        "Upgrade-Insecure-Requests",
-        header::HeaderValue::from_static("1"),
-    );
-
-    let client = Client::builder()
-        .timeout(Duration::from_secs(10))
-        .user_agent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36")
-        .default_headers(headers)  // 应用上述头信息
-        .build()?;
+pub async fn crawl_all_stocks(app: tauri::AppHandle) -> Result<Vec<StockItem>, StockError> {
+    let client: Client =
+        create_xueqiu_http_client(&app).map_err(|err_str| StockError::BusinessError(err_str))?;
 
     // 2. 先请求第 1 页，获取总数据条数（count）
     let first_page_url = "https://stock.xueqiu.com/v5/stock/screener/quote/list.json?page=1&size=90&order=desc&order_by=percent&market=CN&type=sh_sz";

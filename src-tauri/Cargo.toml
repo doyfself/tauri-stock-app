@@ -32,6 +32,7 @@ thiserror = "1.0"
 # 异步支持（reqwest 异步请求）
 tokio = { version = "1.0", features = ["full"] }
 # 日志（可选，用于调试）
-tauri-plugin-log = "2.7"
+tauri-plugin-log = "2"
 log = "0.4"
 
+chrono = "0.4.26"

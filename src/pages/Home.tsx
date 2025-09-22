@@ -2,11 +2,7 @@ import { Button, message, Input } from 'antd';
 import { invoke } from '@tauri-apps/api/core';
 import { DownloadOutlined } from '@ant-design/icons';
 import { useState } from 'react';
-invoke('search_stocks_by_keyword', {
-  keyword: '茅台', // 仅需传递关键词
-}).then((res) => {
-  console.log(res);
-});
+
 export default function Home() {
   const [loading, setLoading] = useState(false);
   const handleCrawlStocks = async () => {
@@ -51,16 +47,15 @@ export default function Home() {
 
 function UpdateCookie() {
   const [cookie, setCookie] = useState('');
+  const [successText, setSuccessText] = useState('');
   const submitCookie = () => {
     // 提交新的 Cookie 值到后端
     invoke('save_xueqiu_cookie', { cookie })
       .then(() => {
-        message.success('Cookie 更新成功');
+        setSuccessText('更新成功');
       })
-      .catch((error) => {
-        message.error(
-          `更新失败: ${error instanceof Error ? error.message : String(error)}`,
-        );
+      .catch(() => {
+        setSuccessText('更新失败');
       });
   };
   return (
@@ -77,6 +72,7 @@ function UpdateCookie() {
       >
         更新 Cookie
       </Button>
+      <span>{successText}</span>
     </>
   );
 }
