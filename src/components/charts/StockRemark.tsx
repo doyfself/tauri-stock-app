@@ -1,22 +1,30 @@
 import { Input, Button } from 'antd';
-import { getSelectionRemarkApi, addSelectionApi } from '@/apis/api';
+import { getSelectionByCode, addSelectionApi } from '@/apis/api';
 import { useEffect, useState } from 'react';
+import type { SelectionItem } from '@/types/response';
 export default function StockRemark({ code }: { code: string }) {
+  const [currentSelection, setCurrentSelection] = useState<SelectionItem>();
   useEffect(() => {
-    getSelectionRemarkApi(code).then((res) => {
+    const fn = async () => {
+      if (!code) return;
+      const res = await getSelectionByCode(code);
       if (res.data) {
+        setCurrentSelection(res.data);
         setRemark(res.data.remark);
       }
-    });
+    };
+    fn();
   }, [code]);
   const [isEditing, setIsEditing] = useState(false);
   const [remark, setRemark] = useState('');
-  const onFinish = () => {
-    addSelectionApi(code, '', '', remark).then((res) => {
-      if (res.success) {
-        setIsEditing(false);
-      }
-    });
+  const onFinish = async () => {
+    const res = await addSelectionApi({
+      ...currentSelection,
+      remark,
+    } as SelectionItem);
+    if (res.success) {
+      setIsEditing(false);
+    }
   };
   return (
     <div className="flex gap-10">

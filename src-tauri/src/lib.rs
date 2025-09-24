@@ -17,16 +17,21 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             // Selection commands
-            command::selection::get_selection,
-            command::selection::get_selection_remark,
-            command::selection::add_selection,
-            command::selection::is_selection_exists,
-            command::selection::update_selection_sort,
-            command::selection::delete_selection,
+            command::selection_command::get_all_selections_cmd,
+            command::selection_command::get_selection_by_code_cmd,
+            command::selection_command::add_or_update_selection_cmd,
+            command::selection_command::update_selection_sort_cmd,
+            command::selection_command::delete_selection_cmd,
+            command::selection_command::is_selection_exists_cmd,
             command::stock_command::crawl_and_save_stocks,
             command::stock_command::search_stocks_by_keyword,
             command::app_config_command::save_xueqiu_cookie,
             command::xueqiu_command::get_kline_data,
+            command::xueqiu_command::get_batch_stock_quote,
+            command::xueqiu_command::get_single_stock_detail,
+            command::stock_lines_command::add_stock_lines_cmd,
+            command::stock_lines_command::query_stock_lines_cmd,
+            command::stock_lines_command::delete_stock_line_cmd
         ])
         .plugin(tauri_plugin_opener::init())
         .run(tauri::generate_context!())

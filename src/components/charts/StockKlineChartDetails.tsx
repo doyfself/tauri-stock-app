@@ -4,12 +4,14 @@ import { Button } from 'antd';
 import klineConfig from './config';
 import { useSelectionStore } from '@/stores/userStore';
 import {
-  getKlineDetailsApi,
-  type KlineDetailsType,
+  getSingleStockDetailsApi,
+  getSelectionByCode,
+  getAllSelectionsApi,
   addSelectionApi,
   isSelectionExistsApi,
   deleteSelectionApi,
 } from '@/apis/api';
+import type { SingleStockDetailsType, SelectionItem } from '@/types/response';
 import { useState, useEffect } from 'react';
 import { isInStockTradingTime } from '@/utils/common';
 import { PlusOutlined, MinusOutlined } from '@ant-design/icons';
@@ -26,12 +28,21 @@ export default function StockKlineChartDetails({ code }: { code: string }) {
   const triggerRefresh = useSelectionStore(
     (state) => state.triggerSelectionRefresh,
   );
-  const [details, setDetails] = useState<KlineDetailsType | null>(null); // 用于存储股票详情数据
+  const [details, setDetails] = useState<SingleStockDetailsType | null>(null); // 用于存储股票详情数据
   const [inSelection, setInSelection] = useState(false);
+  const [currentSelection, setCurrentSelection] = useState<SelectionItem>();
   useEffect(() => {
-    isSelectionExistsApi(code).then((res) => {
-      setInSelection(res.data as boolean);
-    });
+    const fn = async () => {
+      if (!code) return;
+      const res = await isSelectionExistsApi(code);
+      setInSelection(res.data);
+
+      const selectionRes = await getSelectionByCode(code);
+      if (selectionRes && selectionRes.data) {
+        setCurrentSelection(selectionRes.data);
+      }
+    };
+    fn();
   }, [code]);
   useEffect(() => {
     // 存储定时器ID，用于清理
@@ -41,7 +52,7 @@ export default function StockKlineChartDetails({ code }: { code: string }) {
     const fetchData = async () => {
       if (code) {
         try {
-          const response = await getKlineDetailsApi(code);
+          const response = await getSingleStockDetailsApi(code);
           if (response && response.data) {
             setDetails(response.data);
           }
@@ -67,35 +78,47 @@ export default function StockKlineChartDetails({ code }: { code: string }) {
       }
     };
   }, [code]);
-  const addSelection = () => {
+  const addSelection = async () => {
     if (details) {
-      addSelectionApi(code, details.name).then((response) => {
-        if (response && response.data) {
-          setInSelection(true);
-          triggerRefresh();
-        } else {
-          console.error('添加自选失败');
-        }
-      });
-    }
-  };
-  const delSelection = () => {
-    deleteSelectionApi(code).then((response) => {
-      if (response && response.data) {
-        setInSelection(false);
+      const allSelections = await getAllSelectionsApi();
+      const count = allSelections.count || 0;
+      const selection = {
+        code,
+        name: details.name,
+        color: currentSelection?.color || '',
+        remark: currentSelection?.remark || '',
+        sort: count + 1,
+      };
+      const res = await addSelectionApi(selection);
+      if (res.data) {
+        setCurrentSelection(selection);
+        setInSelection(true);
         triggerRefresh();
       } else {
-        console.error('删除自选失败');
+        console.error('添加自选失败');
       }
-    });
+    }
   };
-  const markColorEvent = (key: string) => {
-    if (details) {
-      addSelectionApi(code, details.name, markColors[key]).then((response) => {
-        if (response && response.data) {
-          triggerRefresh();
-        }
-      });
+  const delSelection = async () => {
+    const res = await deleteSelectionApi(code);
+    if (res.data) {
+      setInSelection(false);
+      triggerRefresh();
+    } else {
+      console.error('删除自选失败');
+    }
+  };
+  const markColorEvent = async (key: string) => {
+    console.log(currentSelection);
+    if (inSelection && details) {
+      const selection = {
+        ...currentSelection,
+        color: markColors[key] || '',
+      } as SelectionItem;
+      const res = await addSelectionApi(selection);
+      if (res.data) {
+        triggerRefresh();
+      }
     }
   };
   // 画线
@@ -104,7 +127,7 @@ export default function StockKlineChartDetails({ code }: { code: string }) {
       <div className="stock-details">
         <div className="header">
           <div>
-            {details.name}({details.code})
+            {details.name}({details.symbol})
           </div>
           {!inSelection ? (
             <Button

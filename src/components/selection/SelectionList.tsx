@@ -1,10 +1,9 @@
 import {
-  getSelectionApi,
+  getAllSelectionsApi,
   getSelectionDetails,
   updateSelectionSortApi,
-  type SelectionItem,
-  type SelectionDetailsItem,
 } from '@/apis/api';
+import type { SelectionItem, SelectionDetailsType } from '@/types/response';
 import { useSelectionStore } from '@/stores/userStore';
 import { useEffect, useState, type MouseEvent } from 'react';
 import { isInStockTradingTime } from '@/utils/common';
@@ -18,20 +17,22 @@ export default function App({ code }: { code: string }) {
   const navigate = useNavigate();
   const [baseData, setBaseData] = useState<SelectionItem[]>([]);
   const [symbols, setSymbols] = useState<string>('');
-  const [dynamicData, setDynamicData] = useState<SelectionDetailsItem[]>([]);
+  const [dynamicData, setDynamicData] = useState<SelectionDetailsType[]>([]);
   const [current, setCurrent] = useState(-1);
   const [target, setTarget] = useState(-1);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const initData = () => {
+  const initData = async () => {
     // 获取自选列表
-    getSelectionApi().then((response) => {
-      if (response && response.data) {
-        setBaseData(response.data);
-        setSymbols(response.data.map((item) => item.code).join(','));
-      }
-    });
+    const res = await getAllSelectionsApi();
+    if (res && res.data) {
+      setBaseData(res.data);
+      console.log(res.data, '自选列表数据');
+      setSymbols(res.data.map((item) => item.code).join(','));
+    }
   };
-  useEffect(initData, []);
+  useEffect(() => {
+    initData();
+  }, []);
   useEffect(() => {
     const index = baseData.findIndex((item) => code.includes(item.code));
     setCurrent(index);
@@ -55,6 +56,8 @@ export default function App({ code }: { code: string }) {
           console.error('获取股票详情失败:', error);
           // 可根据需求添加错误处理，如重试机制
         }
+      } else {
+        setDynamicData([]);
       }
     };
 

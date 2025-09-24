@@ -1,5 +1,10 @@
-use crate::requests::xueqiu_request::fetch_raw_kline_data;
-use crate::structs::xueqiu_structs::{GetStockDataParams, RawKlineData, StockKlineItem};
+use crate::requests::xueqiu_request::{
+    fetch_raw_batch_quote, fetch_raw_kline_data, fetch_raw_stock_detail,
+};
+use crate::structs::xueqiu_structs::{
+    GetStockDataParams, RawBatchQuoteData, RawBatchQuoteItem, RawKlineData, RawStockDetailData,
+    StockKlineItem, StockQuote,
+};
 use chrono::{DateTime, Utc};
 use serde_json;
 use tauri::command;
@@ -129,5 +134,90 @@ pub async fn get_kline_data(
         ),
         "data": parsed_kline,
         "count": parsed_kline.len()
+    }))
+}
+
+#[command]
+pub async fn get_batch_stock_quote(
+    app: AppHandle,
+    symbols: &str, // 逗号分隔的股票代码（如 "SH600000,SZ000001"）
+) -> Result<serde_json::Value, String> {
+    if symbols.is_empty() {
+        return Ok(serde_json::json!({
+            "success": false,
+            "message": "股票代码列表不能为空（如 SH600000,SZ000001）",
+            "data": [],
+            "count": 0
+        }));
+    }
+
+    // 2. 调用爬取函数获取原始数据
+    let raw_response = fetch_raw_batch_quote(&app, &symbols).await?;
+
+    // 3. 解析原始数据（提取有效 Quote，过滤 None）
+    let RawBatchQuoteData { items } = raw_response.data;
+    let valid_quotes: Vec<StockQuote> = items
+        .into_iter()
+        .filter_map(|item: RawBatchQuoteItem| item.quote) // 只保留有数据的 quote
+        .collect();
+
+    // 4. 处理空数据场景（匹配 Python 的 "cookie已过期" 提示）
+    if valid_quotes.is_empty() {
+        return Ok(serde_json::json!({
+            "success": false,
+            "message": "未获取到有效报价数据（Cookie可能已过期或代码无效）",
+            "data": [],
+            "count": 0
+        }));
+    }
+
+    // 5. 返回成功 JSON（匹配 Python 响应格式）
+    Ok(serde_json::json!({
+        "success": true,
+        "message": format!("成功获取 {} 只股票的报价数据", valid_quotes.len()),
+        "data": valid_quotes,
+        "count": valid_quotes.len()
+    }))
+}
+
+/// Command：获取单只股票详情（对应 Python 的 get_stock_details）
+#[command]
+pub async fn get_single_stock_detail(
+    app: AppHandle,
+    code: &str, // 单个股票代码（如 "SH600000"）
+) -> Result<serde_json::Value, String> {
+    // 1. 参数校验（修剪空格 + 大写转换）
+    if code.is_empty() {
+        return Ok(serde_json::json!({
+            "success": false,
+            "message": "股票代码不能为空（如 SH600000）",
+            "data": {},
+            "count": 0
+        }));
+    }
+
+    // 2. 调用爬取函数获取原始数据
+    let raw_response = fetch_raw_stock_detail(&app, &code).await?;
+
+    // 3. 解析原始数据（提取 quote，处理空数据）
+    let RawStockDetailData { quote } = raw_response.data;
+    let stock_detail = match quote {
+        Some(detail) => detail,
+        None => {
+            return Ok(serde_json::json!({
+                "success": false,
+                "message": format!("未获取到 {} 的详情数据（Cookie可能已过期）", code),
+                "data": {},
+                "count": 0
+            }));
+        }
+    };
+
+    // 4. 返回成功 JSON
+    Ok(serde_json::json!({
+        "success": true,
+        "message": format!("成功获取 {} 的详情数据", code),
+        "data": stock_detail,
+        "count": 1 // 单只股票，count 固定为 1
     }))
 }

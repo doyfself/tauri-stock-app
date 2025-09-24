@@ -1,13 +1,8 @@
-import {
-  getStockLineApi,
-  deleteStockLineApi,
-  type StockLineType,
-  type DrawlinesType,
-  type LinePoint,
-} from '@/apis/api';
+import { getStockLineApi, deleteStockLineApi } from '@/apis/api';
 import React, { useEffect, useState, useRef } from 'react';
 import { getLinePoints } from './util';
 import { useSelectionLineStore } from '@/stores/userStore';
+import { StockLineType } from '@/types/response';
 
 interface StockKlineChartLineProps {
   code: string;
@@ -16,13 +11,18 @@ interface StockKlineChartLineProps {
   height: number; // 当前容器高度
 }
 
+type LinePoint = {
+  x: number;
+  y: number;
+};
+
 export default function StockKlineChartLine({
   code,
   period,
   width,
 }: StockKlineChartLineProps) {
-  const [lineData, setLineData] = useState<StockLineType>();
-  const [selectedLine, setSelectedLine] = useState<DrawlinesType | null>(null); // 选中的线条
+  const [lineData, setLineData] = useState<StockLineType[]>();
+  const [selectedLineId, setSelectedLineId] = useState<number | null>(null); // 选中的线条id
   const svgRef = useRef<SVGGElement>(null); // 用于监听点击事件的g标签ref
   const triggerRefresh = useSelectionLineStore(
     (state) => state.triggerSelectionRefresh,
@@ -31,12 +31,12 @@ export default function StockKlineChartLine({
   const refreshFlag = useSelectionLineStore((state) => state.refreshFlag);
   // 加载画线数据
   useEffect(() => {
-    getStockLineApi(code, period).then((res) => {
-      if (res.data) {
-        setLineData(res.data);
-        setSelectedLine(null); // 数据更新时重置选中状态
-      }
-    });
+    const fn = async () => {
+      const res = await getStockLineApi(code, period);
+      setLineData(res.data);
+      setSelectedLineId(null); // 数据更新时重置选中状态
+    };
+    fn();
   }, [code, period, refreshFlag]);
 
   // 点击空白区域取消选中
@@ -44,7 +44,7 @@ export default function StockKlineChartLine({
     const handleClickOutside = (e: MouseEvent) => {
       // 若点击的不是g标签内部元素，取消选中
       if (svgRef.current && !svgRef.current.contains(e.target as Node)) {
-        setSelectedLine(null);
+        setSelectedLineId(null);
       }
     };
 
@@ -65,14 +65,13 @@ export default function StockKlineChartLine({
   };
 
   // 处理删除按钮点击（这里仅示例，需根据实际删除接口实现）
-  const handleDelete = async (e: React.MouseEvent, line: DrawlinesType) => {
+  const handleDelete = async (e: React.MouseEvent, id: number) => {
     e.stopPropagation(); // 阻止事件冒泡，避免触发空白区域点击
-    console.log('删除线条:', line.id);
     if (lineData) {
-      await deleteStockLineApi(lineData?.code, lineData?.period, line.id);
+      await deleteStockLineApi(id);
       triggerRefresh();
     }
-    setSelectedLine(null);
+    setSelectedLineId(null);
   };
 
   if (!lineData) return null;
@@ -80,17 +79,19 @@ export default function StockKlineChartLine({
   return (
     <g ref={svgRef}>
       {/* 已完成的贯穿线 */}
-      {lineData.lines.map((line, index) => {
+      {lineData.map((line, index) => {
         // 计算线条在当前容器中的坐标（适配宽高）
         const { start, end } = getLinePoints(
-          line.start,
-          line.end,
-          lineData.width,
-          lineData.height,
+          line.x1,
+          line.y1,
+          line.x2,
+          line.y2,
+          line.width,
+          line.height,
         );
 
         // 判断当前线条是否被选中
-        const isSelected = selectedLine?.id === line.id;
+        const isSelected = selectedLineId === line.id;
 
         return (
           <React.Fragment key={`drawn-line-${index}`}>
@@ -98,7 +99,7 @@ export default function StockKlineChartLine({
             <line
               onClick={(e) => {
                 e.stopPropagation(); // 阻止事件冒泡到document
-                setSelectedLine(line);
+                setSelectedLineId(line.id);
               }}
               x1={start.x}
               y1={start.y}
@@ -134,7 +135,7 @@ export default function StockKlineChartLine({
                   fill="#ff4d4f"
                   fontSize={12}
                   fontWeight={500}
-                  onClick={(e) => handleDelete(e, line)}
+                  onClick={(e) => handleDelete(e, line.id)}
                   cursor="pointer"
                 >
                   删除

@@ -104,34 +104,36 @@ export function calculateMA(data: KlineDataType[], period: number): number[] {
 
 // 计算贯穿线的起点和终点（确保线条穿过整个SVG）
 export const getLinePoints = (
-  start: LinePoint,
-  end: LinePoint,
+  x1: number,
+  y1: number,
+  x2: number,
+  y2: number,
   width: number,
   height: number,
 ): { start: LinePoint; end: LinePoint } => {
   // 计算线条斜率和截距（y = kx + b）
-  const dx = end.x - start.x;
-  const dy = end.y - start.y;
+  const dx = x2 - x1;
+  const dy = y2 - y1;
 
   // 特殊情况：垂直线（x坐标不变）
   if (dx === 0) {
     return {
-      start: { x: start.x, y: 0 }, // 顶部边界
-      end: { x: start.x, y: height }, // 底部边界
+      start: { x: x1, y: 0 }, // 顶部边界
+      end: { x: x1, y: height }, // 底部边界
     };
   }
 
   // 特殊情况：水平线（y坐标不变）
   if (dy === 0) {
     return {
-      start: { x: 0, y: start.y }, // 左侧边界
-      end: { x: width, y: start.y }, // 右侧边界
+      start: { x: 0, y: y1 }, // 左侧边界
+      end: { x: width, y: y1 }, // 右侧边界
     };
   }
 
   // 一般情况：计算线条与SVG边界的交点
   const k = dy / dx; // 斜率
-  const b = start.y - k * start.x; // 截距
+  const b = y1 - k * x1; // 截距
 
   // 计算与左边界（x=0）的交点
   const leftY = k * 0 + b;

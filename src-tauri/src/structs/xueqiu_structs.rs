@@ -14,29 +14,29 @@ pub struct RawKlineData {
 
 /// 批量股票报价接口的原始返回结构
 #[derive(Debug, Deserialize)]
-struct RawBatchQuoteResponse {
-    data: RawBatchQuoteData,
+pub struct RawBatchQuoteResponse {
+    pub data: RawBatchQuoteData,
 }
 
 #[derive(Debug, Deserialize)]
-struct RawBatchQuoteData {
-    items: Vec<RawBatchQuoteItem>,
+pub struct RawBatchQuoteData {
+    pub items: Vec<RawBatchQuoteItem>,
 }
 
 #[derive(Debug, Deserialize)]
-struct RawBatchQuoteItem {
-    quote: Option<StockQuote>, // 单只股票的报价数据
+pub struct RawBatchQuoteItem {
+    pub quote: Option<StockQuote>, // 单只股票的报价数据
 }
 
 /// 单只股票详情接口的原始返回结构
 #[derive(Debug, Deserialize)]
-struct RawStockDetailResponse {
-    data: RawStockDetailData,
+pub struct RawStockDetailResponse {
+    pub data: RawStockDetailData,
 }
 
 #[derive(Debug, Deserialize)]
-struct RawStockDetailData {
-    quote: Option<StockDetail>, // 股票详情数据
+pub struct RawStockDetailData {
+    pub quote: Option<StockDetail>, // 股票详情数据
 }
 
 // --------------------------
@@ -59,26 +59,38 @@ pub struct StockKlineItem {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct StockQuote {
     // 根据实际接口字段补充，例如：
-    pub symbol: String,
+    pub code: String,
     pub name: String,
     pub current: f64, // 当前价
     pub percent: f64, // 涨跌幅
-    pub high: f64,    // 最高价
-    pub low: f64,     // 最低价
 }
 
 /// 股票详情数据结构
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct StockDetail {
-    // 根据实际接口字段补充，例如：
-    pub symbol: String,
-    pub name: String,
-    pub current: f64,        // 当前价
-    pub open: f64,           // 开盘价
-    pub close: f64,          // 昨收价
-    pub market_capital: f64, // 市值
-    pub turnover_rate: f64,  // 换手率
-    pub pe_ttm: f64,         // 动态PE
+    // 基础信息
+    pub name: String,   // 股票名称
+    pub symbol: String, // 股票代码（如 SH600000、SZ000001）
+
+    // 价格相关
+    pub current: Option<f64>,    // 当前价格
+    pub last_close: Option<f64>, // 昨收价（上一交易日收盘价）
+    pub open: Option<f64>,       // 当日开盘价
+    pub high: Option<f64>,       // 当日最高价
+    pub low: Option<f64>,        // 当日最低价
+    pub limit_up: Option<f64>,   // 涨停价（当日价格上限）
+    pub limit_down: Option<f64>, // 跌停价（当日价格下限）
+
+    // 估值相关（市盈率）
+    pub pe_lyr: Option<f64>,      // 静态市盈率（基于上一财年财务数据）
+    pub pe_ttm: Option<f64>,      // 动态市盈率（基于过去12个月滚动财务数据）
+    pub pe_forecast: Option<f64>, // 预测市盈率（基于未来盈利预期）
+
+    // 市场表现相关
+    pub percent: Option<f64>,        // 涨跌幅（单位：%，正数为涨，负数为跌）
+    pub market_capital: Option<f64>, // 市值（通常单位：亿元）
+    pub volume_ratio: Option<f64>,   // 量比（当日成交量与近5日平均成交量的比值）
+    pub turnover_rate: Option<f64>,  // 换手率（单位：%，当日成交量占流通股本的比例）
 }
 
 // --------------------------
@@ -91,16 +103,4 @@ pub struct GetStockDataParams {
     pub period: String,            // 周期（daily/weekly/monthly）
     pub timestamp: Option<String>, // 起始时间戳（可选）
     pub limit: i32,                // 数据条数
-}
-
-/// 批量股票报价请求参数
-#[derive(Debug, Deserialize)]
-pub struct GetSelectionDetailsParams {
-    pub symbols: String, // 股票代码列表（用逗号分隔，如 SH600000,SZ000001）
-}
-
-/// 单只股票详情请求参数
-#[derive(Debug, Deserialize)]
-pub struct GetStockDetailsParams {
-    pub code: String, // 股票代码
 }

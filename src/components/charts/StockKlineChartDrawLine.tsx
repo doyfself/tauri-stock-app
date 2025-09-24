@@ -1,10 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { getLinePoints } from './util';
-import {
-  addStockLineApi,
-  type LinePoint,
-  type DrawlinesType,
-} from '@/apis/api';
+import { addStockLineApi } from '@/apis/api';
 import { useSelectionLineStore } from '@/stores/userStore';
 interface StockKlineChartDrawLineProps {
   width: number;
@@ -12,6 +8,14 @@ interface StockKlineChartDrawLineProps {
   code: string;
   period: string;
 }
+type LinePoint = {
+  x: number;
+  y: number;
+};
+type DrawlinesType = {
+  start: LinePoint;
+  end: LinePoint;
+};
 
 export default function StockKlineChartDrawLine({
   width,
@@ -86,20 +90,27 @@ export default function StockKlineChartDrawLine({
   const revertLine = () => {
     setDrawnLines(drawnLines.slice(0, -1));
   };
-  const onFinish = () => {
-    addStockLineApi({
+  const onFinish = async () => {
+    const argus = drawnLines.map((line) => ({
       code,
       period,
+      x1: line.start.x,
+      y1: line.start.y,
+      x2: line.end.x,
+      y2: line.end.y,
       width,
       height,
-      lines: drawnLines,
-    }).then((res) => {
-      if (res.data) {
-        setDrawnLines([]);
-        setDrawing(false);
-        triggerRefresh();
-      }
-    });
+    }));
+    if (argus.length === 0) {
+      setDrawing(false);
+      return;
+    }
+    const res = await addStockLineApi(argus);
+    if (res.data) {
+      setDrawnLines([]);
+      setDrawing(false);
+      triggerRefresh();
+    }
   };
 
   return (
@@ -135,8 +146,10 @@ export default function StockKlineChartDrawLine({
           {/* 已完成的贯穿线 */}
           {drawnLines.map((line, index) => {
             const { start, end } = getLinePoints(
-              line.start,
-              line.end,
+              line.start.x,
+              line.start.y,
+              line.end.x,
+              line.end.y,
               width,
               height,
             );
@@ -181,8 +194,10 @@ export default function StockKlineChartDrawLine({
               {/* 贯穿线预览 */}
               {(() => {
                 const { start, end } = getLinePoints(
-                  startPoint,
-                  endPoint,
+                  startPoint.x,
+                  startPoint.y,
+                  endPoint.x,
+                  endPoint.y,
                   width,
                   height,
                 );
