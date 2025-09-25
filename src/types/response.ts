@@ -90,3 +90,30 @@ export interface StockLineType {
 export type GetStockLinesInvokeReturn = Promise<
   ResponseBaseType<StockLineType[]>
 >;
+
+export interface StockReviewItem {
+  id: number; // 唯一标识符
+  code: string; // 股票名称
+  type: string; // 评论类型
+  title: string;
+  date: string; // 股票日期
+  description: string; // 描述
+}
+export type StockReviewListItem = Pick<StockReviewItem, 'id' | 'title'>;
+
+export type GetStockReviewInvokeReturn = Promise<
+  ResponseBaseType<StockReviewListItem[]>
+>;
+
+export type GetSingleStockReviewInvokeReturn = Promise<
+  ResponseBaseType<StockReviewItem>
+>;
+
+export type MarketAnalysisItem = {
+  date: string; // 日期格式：YYYY-MM-DD
+  analysis: string;
+  status: string;
+};
+export type GetLastMarketAnalysisInvokeReturn = Promise<
+  ResponseBaseType<MarketAnalysisItem[]>
+>;

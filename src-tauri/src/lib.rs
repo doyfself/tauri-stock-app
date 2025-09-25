@@ -31,7 +31,13 @@ pub fn run() {
             command::xueqiu_command::get_single_stock_detail,
             command::stock_lines_command::add_stock_lines_cmd,
             command::stock_lines_command::query_stock_lines_cmd,
-            command::stock_lines_command::delete_stock_line_cmd
+            command::stock_lines_command::delete_stock_line_cmd,
+            command::stock_review_command::get_stock_review_list_cmd,
+            command::stock_review_command::add_stock_review_cmd,
+            command::stock_review_command::get_single_stock_review_cmd,
+            command::stock_review_command::delete_stock_review_cmd,
+            command::market_analysis_commands::add_market_analysis_cmd,
+            command::market_analysis_commands::query_market_analysis_cmd,
         ])
         .plugin(tauri_plugin_opener::init())
         .run(tauri::generate_context!())

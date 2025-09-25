@@ -24,7 +24,13 @@ const markColors: Record<string, string> = {
   black: '#000000',
 };
 
-export default function StockKlineChartDetails({ code }: { code: string }) {
+export default function StockKlineChartDetails({
+  code,
+  onlyShow,
+}: {
+  code: string;
+  onlyShow: boolean;
+}) {
   const triggerRefresh = useSelectionStore(
     (state) => state.triggerSelectionRefresh,
   );
@@ -121,6 +127,17 @@ export default function StockKlineChartDetails({ code }: { code: string }) {
       }
     }
   };
+  if (onlyShow && details) {
+    return (
+      <div className="stock-details">
+        <div className="header">
+          <div>
+            {details.name}({details.symbol})
+          </div>
+        </div>
+      </div>
+    );
+  }
   // 画线
   if (details)
     return (

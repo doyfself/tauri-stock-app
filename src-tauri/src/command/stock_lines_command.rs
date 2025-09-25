@@ -1,5 +1,5 @@
 use crate::db::stock_lines_db::{add_stock_line, delete_stock_line, query_stock_lines};
-use crate::structs::stock_lines_structs::{AddLineReq, DeleteLineReq, StockLine};
+use crate::structs::stock_lines_structs::{AddLineReq, DeleteLineReq};
 use serde_json;
 use tauri::command;
 use tauri::AppHandle;

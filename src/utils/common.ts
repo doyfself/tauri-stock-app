@@ -155,3 +155,77 @@ export const isInStockTradingTime = (date: Date = new Date()): boolean => {
     (totalMinutes >= afternoonStart && totalMinutes <= afternoonEnd)
   );
 };
+
+/**
+ * 将 Unix 时间戳（秒或毫秒）按照指定格式，转换为北京时间（东八区）字符串。
+ *
+ * @param timestamp 时间戳，可以是数字或字符串。支持秒（10位）或毫秒（13位）。
+ * @param format 输出格式，例如 'YYYY-MM-DD HH:mm:ss'。
+ * @returns 格式化后的北京时间字符串。如果输入无效，则返回 'Invalid Date'。
+ */
+export function formatDate(timestamp: number | string, format: string): string {
+  // 1. 将输入转换为数字
+  let ts = typeof timestamp === 'number' ? timestamp : parseInt(timestamp, 10);
+
+  // 2. 验证时间戳是否有效
+  if (isNaN(ts)) {
+    return 'Invalid Date';
+  }
+
+  // 3. 自动识别并转换为毫秒 (如果是10位数字，则认为是秒)
+  if (ts.toString().length === 10) {
+    ts *= 1000;
+  }
+
+  // 4. 使用 Intl.DateTimeFormat 进行时区转换和格式化
+  // 这是处理时区最标准、最可靠的现代方法
+  try {
+    const formatter = new Intl.DateTimeFormat('zh-CN', {
+      timeZone: 'Asia/Shanghai', // 明确指定为北京时间
+      year: format.includes('YYYY') ? 'numeric' : undefined,
+      month: format.includes('MM') ? '2-digit' : undefined,
+      day: format.includes('DD') ? '2-digit' : undefined,
+      hour: format.includes('HH') ? '2-digit' : undefined,
+      minute: format.includes('mm') ? '2-digit' : undefined,
+      second: format.includes('ss') ? '2-digit' : undefined,
+      hour12: false, // 使用24小时制
+    });
+
+    // 使用 formatToParts 获取各个部分，以便精确替换
+    const parts = formatter.formatToParts(new Date(ts));
+    const values: Record<string, string> = {};
+    parts.forEach((part) => {
+      if (part.type !== 'literal') {
+        // Intl 使用 'month', 'day' 等，我们需要映射到 'MM', 'DD'
+        const key =
+          part.type === 'month'
+            ? 'MM'
+            : part.type === 'day'
+              ? 'DD'
+              : part.type === 'hour'
+                ? 'HH'
+                : part.type === 'minute'
+                  ? 'mm'
+                  : part.type === 'second'
+                    ? 'ss'
+                    : part.type === 'year'
+                      ? 'YYYY'
+                      : part.type;
+        values[key] = part.value;
+      }
+    });
+
+    // 替换格式字符串中的占位符
+    return format
+      .replace('YYYY', values.YYYY || '')
+      .replace('MM', values.MM || '')
+      .replace('DD', values.DD || '')
+      .replace('HH', values.HH || '')
+      .replace('mm', values.mm || '')
+      .replace('ss', values.ss || '');
+  } catch (e) {
+    console.log(e);
+    // 如果格式化失败（例如格式字符串无效）
+    return 'Invalid Date';
+  }
+}

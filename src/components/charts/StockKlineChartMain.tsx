@@ -7,7 +7,7 @@ import StockKlineChartTooltip from './StockKlineChartTooltip';
 import StockKlineChartLine from './StockKlineChartLine';
 import StockKlineChartDrawLine from './StockKlineChartDrawLine';
 import StockRemark from './StockRemark';
-import { isInStockTradingTime } from '@/utils/common';
+import { formatDate, isInStockTradingTime } from '@/utils/common';
 import StockKlineChartVolume, {
   StockKlineChartVolumeBar,
 } from './StockKlineChartVolume';
@@ -24,6 +24,7 @@ export default function StockKlineChartMain({
   height,
   timestamp = '',
   limit = 100,
+  onlyShow = false,
 }: StockKlineChartMainProps) {
   const [data, setData] = useState<KlineDataResponse[]>([]);
   const [maxPrice, setMaxPrice] = useState<number>(0);
@@ -43,7 +44,10 @@ export default function StockKlineChartMain({
       if (code) {
         const response = await getKlineDataApi(code, period, timestamp, limit);
         if (response && response.data) {
-          let newData = response.data;
+          let newData = response.data.map((item) => {
+            item.date = formatDate(item.date, 'YYYY-MM-DD HH:mm');
+            return item;
+          });
           newData = newData.slice(Math.max(newData.length - 100, 0));
           setData(newData);
           setSelectIndex(newData.length - 1);
@@ -68,13 +72,13 @@ export default function StockKlineChartMain({
 
     // 设置定时器，每1分钟（60000毫秒）执行一次
     // 如果传入时期，则不启动轮询
-    if (isInStockTradingTime() && !timestamp) {
+    if (isInStockTradingTime() && !onlyShow) {
       intervalId = setInterval(fetchKlineData, 60000);
     }
 
     // 组件卸载时清除定时器，避免内存泄漏
     return () => clearInterval(intervalId);
-  }, [code, period, timestamp, limit]);
+  }, [code, period, onlyShow, timestamp, limit]);
   // 3. 缓存mapToSvg计算结果，依赖变化时再更新
   const mapToSvg = useMemo(
     () => mapKlineToSvg(height, minPrice, maxPrice),
@@ -94,7 +98,7 @@ export default function StockKlineChartMain({
 
   return (
     <div style={{ width: width + 'px' }}>
-      {!timestamp && <StockKlineChartDetails code={code} />}
+      <StockKlineChartDetails code={code} onlyShow={onlyShow} />
       <StockKlineChartPeriodSwtich period={period} setPeriod={setPeriod} />
       {maData.length && (
         <StockKlineChartMABar maData={maData} index={selectIndex} />
@@ -136,7 +140,7 @@ export default function StockKlineChartMain({
             }}
           />
 
-          {!timestamp && (
+          {!onlyShow && (
             <StockKlineChartLine
               code={code}
               period={period}
@@ -152,7 +156,7 @@ export default function StockKlineChartMain({
             isHovered={isHovered}
           />
         </svg>
-        {!timestamp && (
+        {!onlyShow && (
           <StockKlineChartDrawLine
             width={width}
             height={height}
@@ -170,7 +174,7 @@ export default function StockKlineChartMain({
         index={selectIndex}
         isHovered={isHovered}
       />
-      {!timestamp && <StockRemark code={code} />}
+      {!onlyShow && <StockRemark code={code} />}
     </div>
   );
 }

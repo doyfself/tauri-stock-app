@@ -57,7 +57,7 @@ pub fn init_stock_review_database(app: &AppHandle) -> Result<Connection, String>
 
     conn.execute(
         "CREATE TABLE IF NOT EXISTS stock_review (
-            id TEXT PRIMARY KEY,          
+            id INTEGER PRIMARY KEY AUTOINCREMENT,  -- 唯一自增ID（删除用）
             title TEXT NOT NULL,          
             code TEXT NOT NULL,           
             date TEXT NOT NULL,           
@@ -75,7 +75,9 @@ pub fn init_market_analysis_database(app: &AppHandle) -> Result<Connection, Stri
     conn.execute(
         "CREATE TABLE IF NOT EXISTS market_analysis (
             date TEXT PRIMARY KEY,   
-            analysis TEXT NOT NULL   
+            analysis TEXT NOT NULL,   
+            status TEXT NOT NULL   
+        
         )",
         [], // 无参数，仅创建表结构
     )

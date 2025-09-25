@@ -1,6 +1,8 @@
 import { useEffect, useState, useMemo } from 'react';
 import { getAnalysisApi, addAnalysisApi } from '@/apis/api';
-import { Input, Button } from 'antd';
+import { Input, Button, Select } from 'antd';
+import { DatePicker, List, Card } from 'antd';
+import type { MarketAnalysisItem } from '@/types/response';
 import StockKlineChartMain from '@/components/charts/StockKlineChartMain';
 
 const marketsCodes = [
@@ -18,122 +20,121 @@ const marketsCodes = [
   },
 ];
 
-type EditStatesType = {
-  [key: string]: {
-    isEditing: boolean;
-    content: string;
-  };
+const getBgColor = (status: string) => {
+  switch (status) {
+    case '观察':
+      return 'white';
+    case '看多':
+      return '#b4ffd8';
+    case '看空':
+      return '#ff7047';
+    default:
+      return 'white';
+  }
 };
 
 export default function MarketAnalysis() {
+  const [isEditing, setIsEditing] = useState(false);
+  const [content, setContent] = useState('');
+  const [date, setDate] = useState('');
+  const [status, setStatus] = useState('观察');
+  const [analysisList, setAnalysisList] = useState<MarketAnalysisItem[]>([]);
   // 缓存下午3点的时间戳
   const threePmTimestamp = useMemo(() => {
     const today = new Date();
     today.setHours(15, 0, 0, 0);
     return today.getTime().toString();
   }, []);
-
-  // 管理每个市场的编辑状态和输入内容
-  const [editStates, setEditStates] = useState<EditStatesType>(
-    marketsCodes.reduce((acc, item) => {
-      acc[item.code] = {
-        isEditing: false, // 是否处于编辑状态
-        content: '', // 输入框内容
-      };
-      return acc;
-    }, {} as EditStatesType),
-  );
+  const initData = async () => {
+    const res = await getAnalysisApi();
+    console.log(res);
+    if (res && res.data) {
+      setAnalysisList(res.data);
+    }
+  };
   useEffect(() => {
-    const code = marketsCodes.map((item) => item.code).join(',');
-    getAnalysisApi(code).then((res) => {
-      if (res.data) {
-        Object.keys(res.data).forEach((key) => {
-          const item = res.data?.[key];
-          if (item !== null) {
-            setEditStates((prev) => ({
-              ...prev,
-              [key]: {
-                content: item?.analysis as string,
-                isEditing: false,
-              },
-            }));
-          }
-        });
-      }
-    });
+    initData();
   }, []);
 
-  // 处理编辑按钮点击
-  const handleEdit = (code: string) => {
-    setEditStates((prev) => ({
-      ...prev,
-      [code]: {
-        ...prev[code],
-        isEditing: true,
-      },
-    }));
-  };
-
   // 处理完成按钮点击
-  const handleComplete = (code: string) => {
-    setEditStates((prev) => ({
-      ...prev,
-      [code]: {
-        ...prev[code],
-        isEditing: false,
-      },
-    }));
-    addAnalysisApi(code, editStates[code].content);
+  const handleComplete = async () => {
+    await addAnalysisApi(date, content, status);
+    setIsEditing(false);
+    initData();
   };
-
-  // 处理输入框内容变化
-  const handleInputChange = (code: string, value: string) => {
-    setEditStates((prev) => ({
-      ...prev,
-      [code]: {
-        ...prev[code],
-        content: value,
-      },
-    }));
-  };
-
   return (
-    <div className="overflow-auto h100p flex flex-col gap-20">
-      {marketsCodes.map((item) => {
-        const { isEditing, content } = editStates[item.code];
-        return (
-          <div className="flex gap-20" key={`market-analysis-${item.code}`}>
-            <h3>{item.name}</h3>
-            <StockKlineChartMain
-              code={item.code}
-              width={800}
-              height={300}
-              timestamp={threePmTimestamp}
-              limit={80}
-            />
-            <Input.TextArea
-              style={{
-                color: 'green',
-                fontSize: '16px',
-              }}
-              rows={4}
-              disabled={!isEditing}
-              value={content}
-              onChange={(e) => handleInputChange(item.code, e.target.value)}
-            />
-            {!isEditing ? (
-              <Button type="link" onClick={() => handleEdit(item.code)}>
-                编辑
-              </Button>
-            ) : null}
-            {isEditing ? (
-              <Button type="primary" onClick={() => handleComplete(item.code)}>
-                完成
-              </Button>
-            ) : null}
+    <div className="flex h100p gap-20">
+      <div className="flex flex-col gap-10 overflow-auto h100p">
+        {marketsCodes.map((item) => {
+          return (
+            <div className="flex gap-20" key={`market-analysis-${item.code}`}>
+              <StockKlineChartMain
+                code={item.code}
+                width={800}
+                height={300}
+                timestamp={threePmTimestamp}
+                limit={80}
+                onlyShow={true}
+              />
+            </div>
+          );
+        })}
+      </div>
+      {isEditing && (
+        <div className="flex flex-col flex-1 gap-10 w100p">
+          <Select
+            options={[
+              { value: '观察', label: <span>观察</span> },
+              { value: '看多', label: <span>看多</span> },
+              { value: '看空', label: <span>看空</span> },
+            ]}
+            defaultValue={'观察'}
+            onChange={(val) => setStatus(val)}
+          />
+          <DatePicker
+            format="YYYY-MM-DD"
+            onChange={(_, date) => setDate(date as string)}
+          />
+          <Input.TextArea
+            style={{
+              color: 'green',
+              fontSize: '16px',
+            }}
+            rows={4}
+            disabled={!isEditing}
+            onChange={(e) => setContent(e.target.value)}
+          />
+          <div>
+            <Button type="primary" onClick={handleComplete}>
+              完成
+            </Button>
+            <Button type="default" onClick={() => setIsEditing(false)}>
+              取消
+            </Button>
           </div>
-        );
-      })}
+        </div>
+      )}
+      {!isEditing && (
+        <div>
+          <List
+            dataSource={analysisList}
+            renderItem={(item) => (
+              <List.Item>
+                <Card
+                  title={item.date}
+                  style={{ background: getBgColor(item.status) }}
+                  size="small"
+                >
+                  {item.analysis}
+                </Card>
+              </List.Item>
+            )}
+          />
+          <Button type="primary" onClick={() => setIsEditing(true)}>
+            添加分析
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

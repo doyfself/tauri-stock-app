@@ -1,4 +1,3 @@
-import request from '../utils/request';
 import { invoke } from '@tauri-apps/api/core';
 import * as responseType from '@/types/response';
 export const queryStockByWordApi = (w: string) =>
@@ -76,21 +75,18 @@ export const getSelectionDetails = (symbols: string) =>
   );
 
 // 获取自选三省列表
-export interface StockReviewItem {
-  id: string; // 股票代码
-  code: string; // 股票名称
-  title: string;
-  date: string; // 股票日期
-  description: string; // 描述
-}
-export const getStockReviewApi = (type: string, keyword: string) =>
-  request.get<StockReviewItem[]>(
-    `/get_stock_review?type=${type}&keyword=${keyword}`,
-  );
 
-export const getSingleStockReviewApi = (type: string, id: string) =>
-  request.get<StockReviewItem>(
-    `/get_single_stock_review?id=${id}&type=${type}`,
+export const getStockReviewApi = (type: string, keyword: string) =>
+  invoke<responseType.GetStockReviewInvokeReturn>('get_stock_review_list_cmd', {
+    req: { type, keyword },
+  });
+
+// 获取单条评论
+
+export const getSingleStockReviewApi = (id: number) =>
+  invoke<responseType.GetSingleStockReviewInvokeReturn>(
+    'get_single_stock_review_cmd',
+    { req: { id } },
   );
 
 // 添加
@@ -101,31 +97,33 @@ export const addStockReviewApi = (
   date: string = '',
   description: string = '',
 ) =>
-  request.post<boolean>('/add_stock_review', {
-    type,
-    code,
-    title,
-    date,
-    description,
+  invoke<responseType.InvokeBooleanReturn>('add_stock_review_cmd', {
+    req: {
+      type,
+      code,
+      title,
+      date,
+      description,
+    },
   });
 // 删除自选
-export const deleteStockReviewApi = (type: string, code: string) =>
-  request.post<boolean>('/delete_stock_review', { code, type });
+export const deleteStockReviewApi = (id: number) =>
+  invoke<responseType.InvokeBooleanReturn>('delete_stock_review_cmd', {
+    req: { id },
+  });
 
-//  大盘分析
-export interface MarketAnalysisItem {
-  [key: string]: null | {
-    date: string;
-    analysis: string;
-  };
-}
-export const getAnalysisApi = (code: string) =>
-  request.get<MarketAnalysisItem>(`/get_analysis_info?code=${code}`);
+export const getAnalysisApi = () =>
+  invoke<responseType.GetLastMarketAnalysisInvokeReturn>(
+    'query_market_analysis_cmd',
+  );
 
-export const addAnalysisApi = (code: string, analysis: string) =>
-  request.post<boolean>('/add_analysis_info', {
-    analysis,
-    code,
+export const addAnalysisApi = (
+  date: string,
+  analysis: string,
+  status: string,
+) =>
+  invoke<responseType.InvokeBooleanReturn>('add_market_analysis_cmd', {
+    req: { date, analysis, status },
   });
 
 //  画线

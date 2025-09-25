@@ -7,6 +7,7 @@ import {
   DatePicker,
   message,
   List,
+  Popconfirm,
 } from 'antd';
 import './StockReview.css';
 import type { Moment } from 'moment';
@@ -16,28 +17,35 @@ import { useParams } from 'react-router-dom';
 import {
   getStockReviewApi,
   addStockReviewApi,
-  type StockReviewItem,
+  deleteStockReviewApi,
 } from '@/apis/api';
+import type { StockReviewListItem } from '@/types/response';
 export default function StockReview() {
   const { type } = useParams<{ type: string }>();
   const [modalOpen, setModalOpen] = useState(false);
-  const [, setList] = useState<StockReviewItem[]>([]);
-  const [showData, setShowData] = useState<StockReviewItem[]>([]);
+  const [, setList] = useState<StockReviewListItem[]>([]);
+  const [showData, setShowData] = useState<StockReviewListItem[]>([]);
   const [keyword, setKeyword] = useState('');
   const [more, setMore] = useState(false);
-  useEffect(() => {
+  const initList = async () => {
     if (type) {
-      getStockReviewApi(type, keyword).then((res) => {
-        if (res && res.data) {
-          setList(res.data);
-          setShowData(res.data.slice(0, 10));
-          setMore(res.data.length > 10);
-        }
-      });
+      const res = await getStockReviewApi(type, keyword);
+      if (res && res.data) {
+        setList(res.data);
+        setShowData(res.data);
+        setMore(res.data.length > 10);
+      }
     }
+  };
+  useEffect(() => {
+    initList();
   }, [type, keyword]);
   const onSearch = (value: string) => {
     setKeyword(value);
+  };
+  const deleteThis = async (id: number) => {
+    await deleteStockReviewApi(id);
+    initList();
   };
   return (
     <div className="relative w100p h100p overflow-hidden">
@@ -52,6 +60,7 @@ export default function StockReview() {
         modalOpen={modalOpen}
         setModalOpen={setModalOpen}
         type={type as string}
+        initList={initList}
       />
       <div className="rs-search-area">
         <h1>{type === 'position' ? '持仓三省' : '欲购三省'}</h1>
@@ -68,8 +77,20 @@ export default function StockReview() {
           bordered
           dataSource={showData}
           renderItem={(item) => (
-            <List.Item>
-              <Link to={`/sr/${type}/${item.id}`}>{item.title}</Link>
+            <List.Item
+              actions={[
+                <Popconfirm
+                  title="确认删除"
+                  description="Are you sure to delete this task?"
+                  onConfirm={() => deleteThis(item.id)}
+                  okText="Yes"
+                  cancelText="No"
+                >
+                  <a key="list-loadmore-edit">删除</a>
+                </Popconfirm>,
+              ]}
+            >
+              <Link to={`/sr/details/${item.id}`}>{item.title}</Link>
             </List.Item>
           )}
         />
@@ -82,6 +103,7 @@ interface ReflectSelectionModalProps {
   modalOpen: boolean;
   setModalOpen: (val: boolean) => void;
   type: string;
+  initList: () => void;
 }
 type FieldType = {
   title: string;
@@ -93,29 +115,27 @@ const ReflectSelectionModal = ({
   modalOpen,
   setModalOpen,
   type,
+  initList,
 }: ReflectSelectionModalProps) => {
-  const [messageApi, contextHolder] = message.useMessage();
-  const onFinish: FormProps<FieldType>['onFinish'] = (values) => {
+  const [form] = Form.useForm();
+  const onFinish: FormProps<FieldType>['onFinish'] = async (values) => {
     let date = values.date.format('YYYY-MM-DD') + ' 15:00:00';
     date = new Date(date).getTime().toString();
-    addStockReviewApi(
+    const res = await addStockReviewApi(
       type,
       values.code,
       values.title,
       date,
       values.description,
-    ).then((res) => {
-      if (res.data) {
-        messageApi.success('成功');
-        setModalOpen(false);
-      } else {
-        messageApi.error('添加失败');
-      }
-    });
+    );
+    if (res.data) {
+      initList();
+      setModalOpen(false);
+      form.resetFields();
+    }
   };
   return (
     <>
-      {contextHolder}
       <Modal
         title="新增感悟"
         footer={null}
@@ -123,6 +143,7 @@ const ReflectSelectionModal = ({
         onCancel={() => setModalOpen(false)}
       >
         <Form
+          form={form}
           name="basic"
           labelCol={{ span: 4 }}
           wrapperCol={{ span: 20 }}

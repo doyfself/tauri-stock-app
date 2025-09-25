@@ -45,7 +45,7 @@ pub struct RawStockDetailData {
 /// 解析后的 K 线数据结构
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct StockKlineItem {
-    pub date: String,      // 格式化后的时间（YYYY-MM-DD HH:MM）
+    pub date: i64,         // 格式化后的时间（YYYY-MM-DD HH:MM）
     pub open: f64,         // 开盘价
     pub high: f64,         // 最高价
     pub low: f64,          // 最低价

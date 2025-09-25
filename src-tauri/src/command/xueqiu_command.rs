@@ -5,7 +5,7 @@ use crate::structs::xueqiu_structs::{
     GetStockDataParams, RawBatchQuoteData, RawBatchQuoteItem, RawKlineData, RawStockDetailData,
     StockKlineItem, StockQuote,
 };
-use chrono::{DateTime, Utc};
+use chrono::Utc;
 use serde_json;
 use tauri::command;
 use tauri::AppHandle;
@@ -83,20 +83,12 @@ pub async fn get_kline_data(
             .zip(kline_item.iter())
             .map(|(col_name, val)| (col_name.as_str(), val))
             .collect();
-
+        println!("Data map: {:?}", data_map.get("timestamp"));
         // 解析时间戳
         let timestamp = data_map
             .get("timestamp")
             .and_then(|v| v.as_i64())
             .unwrap_or(0);
-        let date_str = if timestamp > 0 {
-            DateTime::from_timestamp_millis(timestamp)
-                .unwrap_or(Utc::now())
-                .format("%Y-%m-%d %H:%M")
-                .to_string()
-        } else {
-            "".to_string()
-        };
 
         // 解析数值字段
         let parse_num = |key: &str| -> f64 {
@@ -112,7 +104,7 @@ pub async fn get_kline_data(
         };
 
         parsed_kline.push(StockKlineItem {
-            date: date_str,
+            date: timestamp,
             open: parse_num("open"),
             high: parse_num("high"),
             low: parse_num("low"),

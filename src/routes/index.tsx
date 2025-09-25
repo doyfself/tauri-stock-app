@@ -24,7 +24,7 @@ export const routes: RouteObject[] = [
         element: <StockReview />,
       },
       {
-        path: '/sr/:type/:id',
+        path: '/sr/details/:id',
         element: <StockReviewDetails />,
       },
     ],
