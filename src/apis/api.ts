@@ -90,21 +90,16 @@ export const getSingleStockReviewApi = (id: number) =>
   );
 
 // 添加
-export const addStockReviewApi = (
-  type: string,
-  code: string,
-  title: string,
-  date: string = '',
-  description: string = '',
-) =>
+export const addStockReviewApi = (req: {
+  id?: number;
+  type: string;
+  code: string;
+  title: string;
+  date: string;
+  description: string;
+}) =>
   invoke<responseType.InvokeBooleanReturn>('add_stock_review_cmd', {
-    req: {
-      type,
-      code,
-      title,
-      date,
-      description,
-    },
+    req,
   });
 // 删除自选
 export const deleteStockReviewApi = (id: number) =>

@@ -54,11 +54,14 @@ pub fn get_stock_review_list(
 }
 
 /// 2. 新增评论（对应Python的add_stock_review）
-/// 自动生成UUID，按类型存储
-pub fn add_stock_review(app: &AppHandle, req: &AddReviewReq) -> Result<StockReview, StockError> {
+pub fn add_or_edit_stock_review(
+    app: &AppHandle,
+    req: &AddReviewReq,
+) -> Result<StockReview, StockError> {
+    // 1. 获取数据库连接（复用你原有的 get_stock_review_db_conn 方法，不新增）
     let conn = get_stock_review_db_conn(app)?;
 
-    // 1. 参数校验（保留原有非空检查，新增日期格式合法性校验可选）
+    // 2. 保留原有的参数校验逻辑（只加不减）
     if req.r#type.is_empty() {
         return Err(StockError::BusinessError(
             "评论类型（type）不能为空".to_string(),
@@ -75,42 +78,97 @@ pub fn add_stock_review(app: &AppHandle, req: &AddReviewReq) -> Result<StockRevi
         ));
     }
 
-    // 2. 执行插入并获取自增ID（关键：用 RETURNING id 替代手动构造id）
-    // 注意：SQL语句移除 id 字段，让数据库自动生成自增ID
-    let mut stmt = conn
-        .prepare(
-            "INSERT INTO stock_review 
-             (title, code, date, type, description)  -- 移除 id 字段
-             VALUES (?1, ?2, ?3, ?4, ?5)
-             RETURNING id",
-        )
-        .map_err(|e| StockError::DbError(e))?;
+    // 3. 核心分支：根据 id 是否存在，判断新增/编辑
+    let result_review = match req.id {
+        // 3.1 有 ID → 执行编辑（UPDATE）
+        Some(review_id) => {
+            // 校验 ID 有效性（避免非法 ID）
+            if review_id <= 0 {
+                return Err(StockError::BusinessError(
+                    "无效的评论ID，编辑失败".to_string(),
+                ));
+            }
 
-    // 3. 绑定参数并执行，获取自增ID（假设表中 id 是 INTEGER 类型自增）
-    let auto_incr_id: i32 = stmt
-        .query_row(
-            params![
-                &req.title,
-                &req.code.to_uppercase(), // 股票代码统一大写
-                &req.date,
-                &req.r#type,
-                &req.description, // 允许为空（若表结构允许）
-            ],
-            |row| row.get(0), // 提取返回的自增ID
-        )
-        .map_err(|e| StockError::DbError(e))?;
+            // 执行 UPDATE SQL（直接写 SQL 字符串，不依赖 schema）
+            // 注意：SQL 语法根据数据库调整（SQLite/PostgreSQL 通用，MySQL 也类似）
+            let update_sql = r#"
+                UPDATE stock_review 
+                SET title = ?1, code = ?2, date = ?3, type = ?4, description = ?5 
+                WHERE id = ?6
+            "#;
 
-    // 4. 构造完整的 StockReview（用数据库生成的自增ID填充）
-    let new_review = StockReview {
-        id: auto_incr_id, // 若 id 是字符串类型，转成字符串；若本身是 i32，直接用 auto_incr_id
-        title: req.title.clone(),
-        code: req.code.to_uppercase(),
-        date: req.date.clone(),
-        r#type: req.r#type.clone(),
-        description: req.description.clone(),
+            // 执行更新（绑定参数：避免 SQL 注入，复用你原有的参数逻辑）
+            let rows_affected = conn
+                .execute(
+                    update_sql,
+                    (
+                        &req.title,
+                        &req.code.to_uppercase(), // 股票代码统一大写（保留原逻辑）
+                        &req.date,
+                        &req.r#type,
+                        &req.description, // 允许为空（根据表结构调整）
+                        review_id,        //  WHERE 条件：更新指定 ID 的记录
+                    ),
+                )
+                .map_err(|e| StockError::DbError(e))?;
+
+            // 检查是否有记录被更新（比如 ID 不存在时，rows_affected 为 0）
+            if rows_affected == 0 {
+                return Err(StockError::BusinessError(
+                    format!("未找到 ID 为 {} 的评论，编辑失败", review_id).to_string(),
+                ));
+            }
+
+            // 编辑成功：构造返回的 StockReview（用传入的 ID）
+            StockReview {
+                id: review_id,
+                title: req.title.clone(),
+                code: req.code.to_uppercase(),
+                date: req.date.clone(),
+                r#type: req.r#type.clone(),
+                description: req.description.clone(),
+            }
+        }
+
+        // 3.2 无 ID → 执行新增（INSERT，保留你原有的逻辑）
+        None => {
+            // 原有的 INSERT SQL（保留，仅调整参数绑定）
+            let insert_sql = r#"
+                INSERT INTO stock_review 
+                (title, code, date, type, description) 
+                VALUES (?1, ?2, ?3, ?4, ?5)
+                RETURNING id; // 关键：获取数据库自动生成的自增 ID（SQLite 3.35+ 支持，PostgreSQL 也支持）
+            "#;
+
+            // 执行插入并获取自增 ID（复用原逻辑）
+            let auto_incr_id: i32 = conn
+                .query_row(
+                    insert_sql,
+                    (
+                        &req.title,
+                        &req.code.to_uppercase(),
+                        &req.date,
+                        &req.r#type,
+                        &req.description,
+                    ),
+                    |row| row.get(0), // 提取返回的自增 ID
+                )
+                .map_err(|e| StockError::DbError(e))?;
+
+            // 新增成功：构造返回的 StockReview（用自增 ID）
+            StockReview {
+                id: auto_incr_id,
+                title: req.title.clone(),
+                code: req.code.to_uppercase(),
+                date: req.date.clone(),
+                r#type: req.r#type.clone(),
+                description: req.description.clone(),
+            }
+        }
     };
 
-    Ok(new_review)
+    // 4. 返回最终结果（新增/编辑后的 StockReview）
+    Ok(result_review)
 }
 
 /// 3. 获取单条评论（对应Python的get_single_stock_review）

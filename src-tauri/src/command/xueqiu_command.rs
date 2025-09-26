@@ -42,6 +42,11 @@ pub async fn get_kline_data(
         }
     };
 
+    println!(
+        "Fetching Kline data for code: {}, period: {}, timestamp: {}, limit: {}",
+        code, period, timestamp, limit
+    );
+
     // 3. 调用爬取函数获取原始数据
     let raw_response = match fetch_raw_kline_data(&app, &code, &period, &timestamp, limit).await {
         Ok(data) => data,
@@ -83,7 +88,6 @@ pub async fn get_kline_data(
             .zip(kline_item.iter())
             .map(|(col_name, val)| (col_name.as_str(), val))
             .collect();
-        println!("Data map: {:?}", data_map.get("timestamp"));
         // 解析时间戳
         let timestamp = data_map
             .get("timestamp")

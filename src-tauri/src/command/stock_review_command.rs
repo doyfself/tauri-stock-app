@@ -1,5 +1,5 @@
 use crate::db::stock_review_db::{
-    add_stock_review, delete_stock_review, get_single_stock_review, get_stock_review_list,
+    add_or_edit_stock_review, delete_stock_review, get_single_stock_review, get_stock_review_list,
 };
 use crate::structs::stock_review_structs::{AddReviewReq, GetOrDeleteReviewReq, GetReviewListReq};
 use serde_json;
@@ -73,7 +73,7 @@ pub fn add_stock_review_cmd(
         }));
     }
 
-    match add_stock_review(&app, &req) {
+    match add_or_edit_stock_review(&app, &req) {
         Ok(new_review) => Ok(serde_json::json!({
             "success": true,
             "message": format!("评论新增成功（ID：{}）", new_review.id),

@@ -4,19 +4,30 @@ import { addStockCodePrefix } from '@/utils/common';
 import { getSingleStockReviewApi } from '@/apis/api';
 import { StockReviewItem } from '@/types/response';
 import StockKlineChartMain from '@/components/charts/StockKlineChartMain';
+import { LeftOutlined } from '@ant-design/icons';
+import { Button } from 'antd';
+import { useNavigate } from 'react-router-dom';
+import { ReflectSelectionModal } from '@/pages/StockReview';
+
 export default function StockReviewDetails() {
   // 获取路由参数id
-  const { id } = useParams<{ id: string }>();
+  const { id, type } = useParams<{ id: string; type: string }>();
   const [data, setData] = useState<StockReviewItem | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
+  const navigate = useNavigate();
+  const initData = async () => {
+    if (id) {
+      const res = await getSingleStockReviewApi(+id);
+      console.log(res);
+      setData(res.data);
+    }
+  };
   useEffect(() => {
-    const fn = async () => {
-      if (id) {
-        const res = await getSingleStockReviewApi(+id);
-        setData(res.data);
-      }
-    };
-    fn();
+    initData();
   }, [id]);
+  const editReview = () => {
+    setModalOpen(true);
+  };
   if (data) {
     return (
       <div className="pv-details-container">
@@ -30,6 +41,26 @@ export default function StockReviewDetails() {
           onlyShow={true}
         />
         <p dangerouslySetInnerHTML={{ __html: data.description }}></p>
+        <div className="flex">
+          <Button
+            type="link"
+            icon={<LeftOutlined />}
+            onClick={() => navigate(-1)}
+          >
+            返回
+          </Button>
+          <Button type="link" onClick={editReview}>
+            编辑
+          </Button>
+        </div>
+
+        <ReflectSelectionModal
+          modalOpen={modalOpen}
+          setModalOpen={setModalOpen}
+          type={type as string}
+          initList={initData}
+          initData={data}
+        />
       </div>
     );
   }

@@ -20,6 +20,7 @@ pub struct StockReviewListItem {
 /// 新增评论的请求参数
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct AddReviewReq {
+    pub id: Option<i32>,
     pub r#type: String,      // 评论类型（必填）
     pub code: String,        // 股票代码（必填）
     pub title: String,       // 评论标题（必填）

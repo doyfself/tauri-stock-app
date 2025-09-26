@@ -5,21 +5,22 @@ import {
   Form,
   type FormProps,
   DatePicker,
-  message,
   List,
   Popconfirm,
 } from 'antd';
 import './StockReview.css';
 import type { Moment } from 'moment';
+import moment from 'moment';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useParams } from 'react-router-dom';
+import { formatDate } from '@/utils/common';
 import {
   getStockReviewApi,
   addStockReviewApi,
   deleteStockReviewApi,
 } from '@/apis/api';
-import type { StockReviewListItem } from '@/types/response';
+import type { StockReviewItem, StockReviewListItem } from '@/types/response';
 export default function StockReview() {
   const { type } = useParams<{ type: string }>();
   const [modalOpen, setModalOpen] = useState(false);
@@ -47,13 +48,12 @@ export default function StockReview() {
     await deleteStockReviewApi(id);
     initList();
   };
+  const addReview = () => {
+    setModalOpen(true);
+  };
   return (
     <div className="relative w100p h100p overflow-hidden">
-      <Button
-        type="primary"
-        className="rs-add-button"
-        onClick={() => setModalOpen(true)}
-      >
+      <Button type="primary" className="rs-add-button" onClick={addReview}>
         新增领悟
       </Button>
       <ReflectSelectionModal
@@ -61,6 +61,7 @@ export default function StockReview() {
         setModalOpen={setModalOpen}
         type={type as string}
         initList={initList}
+        initData={null}
       />
       <div className="rs-search-area">
         <h1>{type === 'position' ? '持仓三省' : '欲购三省'}</h1>
@@ -86,11 +87,11 @@ export default function StockReview() {
                   okText="Yes"
                   cancelText="No"
                 >
-                  <a key="list-loadmore-edit">删除</a>
+                  <a key="list-delete">删除</a>
                 </Popconfirm>,
               ]}
             >
-              <Link to={`/sr/details/${item.id}`}>{item.title}</Link>
+              <Link to={`/sr/${type}/${item.id}`}>{item.title}</Link>
             </List.Item>
           )}
         />
@@ -104,6 +105,7 @@ interface ReflectSelectionModalProps {
   setModalOpen: (val: boolean) => void;
   type: string;
   initList: () => void;
+  initData: StockReviewItem | null;
 }
 type FieldType = {
   title: string;
@@ -111,29 +113,43 @@ type FieldType = {
   date: Moment;
   description: string;
 };
-const ReflectSelectionModal = ({
+export const ReflectSelectionModal = ({
   modalOpen,
   setModalOpen,
   type,
   initList,
+  initData,
 }: ReflectSelectionModalProps) => {
   const [form] = Form.useForm();
   const onFinish: FormProps<FieldType>['onFinish'] = async (values) => {
     let date = values.date.format('YYYY-MM-DD') + ' 15:00:00';
     date = new Date(date).getTime().toString();
-    const res = await addStockReviewApi(
-      type,
-      values.code,
-      values.title,
-      date,
-      values.description,
-    );
+    const req = {
+      type: type,
+      code: values.code,
+      title: values.title,
+      date: date,
+      description: values.description,
+    };
+    if (initData) {
+      Reflect.set(req, 'id', initData.id);
+    }
+    const res = await addStockReviewApi(req);
     if (res.data) {
       initList();
       setModalOpen(false);
       form.resetFields();
     }
   };
+  useEffect(() => {
+    if (modalOpen && initData) {
+      const fields = {
+        ...initData,
+        date: moment(formatDate(initData.date, 'YYYY-MM-DD')),
+      };
+      form.setFieldsValue(fields);
+    }
+  }, [modalOpen, initData, form]);
   return (
     <>
       <Modal
