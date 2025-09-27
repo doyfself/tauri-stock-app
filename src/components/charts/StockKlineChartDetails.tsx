@@ -15,15 +15,94 @@ import type { SingleStockDetailsType, SelectionItem } from '@/types/response';
 import { useState, useEffect } from 'react';
 import { isInStockTradingTime } from '@/utils/common';
 import { PlusOutlined, MinusOutlined } from '@ant-design/icons';
+import StockRemark from './StockRemark';
 
 const markColors: Record<string, string> = {
   purple: '#B833A0',
   red: '#E6353A',
   yellow: '#F68F26',
   green: '#47A854',
-  black: '#000000',
+  white: '#ffffff',
 };
-
+type KlineConfigType = typeof klineConfig;
+// 1. 定义指标配置（顺序与原代码一致，包含名称、字段、样式逻辑）
+interface IndicatorItemConfig {
+  label: string;
+  // 将 field 的类型从 string 改为 keyof SingleStockDetailsType
+  field: keyof SingleStockDetailsType;
+  formatValue?: (value: number | string) => string;
+  getColor?: (
+    value: number | string,
+    details: SingleStockDetailsType,
+    klineConfig: KlineConfigType,
+  ) => string;
+}
+const indicatorConfig: IndicatorItemConfig[] = [
+  {
+    label: '开盘', // 指标名称
+    field: 'open', // 对应 details 中的字段
+    // 无特殊样式，用默认配置
+  },
+  {
+    label: '最高',
+    field: 'high',
+    // 颜色规则：对比 last_close，涨为 riseColor，跌为 fallColor
+    getColor: (value, details, klineConfig) =>
+      +value >= details.last_close
+        ? klineConfig.riseColor
+        : klineConfig.fallColor,
+  },
+  {
+    label: '最低',
+    field: 'low',
+    // 同「最高」的颜色规则
+    getColor: (value, details, klineConfig) =>
+      +value >= details.last_close
+        ? klineConfig.riseColor
+        : klineConfig.fallColor,
+  },
+  {
+    label: '涨停',
+    field: 'limit_up',
+    // 固定为 riseColor
+    getColor: (_, __, klineConfig) => klineConfig.riseColor,
+  },
+  {
+    label: '跌停',
+    field: 'limit_down',
+    // 固定为 fallColor
+    getColor: (_, __, klineConfig) => klineConfig.fallColor,
+  },
+  {
+    label: '量比',
+    field: 'volume_ratio',
+    // 无特殊样式
+  },
+  {
+    label: '换手率',
+    field: 'turnover_rate',
+    // 额外拼接 "%" 符号
+    formatValue: (value) => `${value}%`,
+  },
+  {
+    label: '市盈率(静)',
+    field: 'pe_lyr',
+  },
+  {
+    label: '市盈率(动)',
+    field: 'pe_forecast',
+  },
+  {
+    label: '市盈率(TTM)',
+    field: 'pe_ttm',
+  },
+  {
+    label: '市值',
+    field: 'market_capital',
+    // 调用外部格式化函数 formatVolume
+    formatValue: (value) => formatVolume(+value),
+  },
+];
 export default function StockKlineChartDetails({
   code,
   onlyShow,
@@ -141,14 +220,28 @@ export default function StockKlineChartDetails({
   // 画线
   if (details)
     return (
-      <div className="stock-details">
-        <div className="header">
-          <div>
-            {details.name}({details.symbol})
+      <div className="w-[320px] text-[#fff] bg-[#23272D] p-[10px] h-full">
+        <div className="">
+          <div className="text-[20px]">
+            {details.name}
+            <span className="text-[18px] ml-[10px]">{details.symbol}</span>
+          </div>
+          <div
+            className="text-[18px]"
+            style={{
+              color:
+                details.percent >= 0
+                  ? klineConfig.riseColor
+                  : klineConfig.fallColor,
+            }}
+          >
+            {details.current}{' '}
+            <span className="ml-[10px]">{details.percent}%</span>
           </div>
           {!inSelection ? (
             <Button
               type="primary"
+              size="small"
               onClick={addSelection}
               icon={<PlusOutlined />}
             >
@@ -158,15 +251,17 @@ export default function StockKlineChartDetails({
             <Button
               danger
               type="primary"
+              size="small"
               icon={<MinusOutlined />}
               onClick={delSelection}
             >
               删自选
             </Button>
           )}
-          <ul className="mark-color-ul">
+          <ul className="flex items-center gap-[6px] mt-[10px] mb-[10px]">
             {Object.keys(markColors).map((key) => (
               <li
+                className="w-[14px] h-[14px] cursor-pointer rounded-[2px]"
                 onClick={() => markColorEvent(key)}
                 key={key}
                 style={{
@@ -176,72 +271,37 @@ export default function StockKlineChartDetails({
             ))}
           </ul>
         </div>
-        <div
-          className="price"
-          style={{
-            color:
-              details.percent >= 0
-                ? klineConfig.riseColor
-                : klineConfig.fallColor,
-          }}
-        >
-          {details.current} <span>({details.percent}%)</span>
-        </div>
-        <ul>
-          <li>开盘: {details.open}</li>
-          <li>
-            最高:{' '}
-            <span
-              style={{
-                color:
-                  details.high >= details.last_close
-                    ? klineConfig.riseColor
-                    : klineConfig.fallColor,
-              }}
-            >
-              {details.high}
-            </span>
-          </li>
-          <li>
-            最低:{' '}
-            <span
-              style={{
-                color:
-                  details.low >= details.last_close
-                    ? klineConfig.riseColor
-                    : klineConfig.fallColor,
-              }}
-            >
-              {details.low}
-            </span>
-          </li>
-          <li>
-            涨停:{' '}
-            <span
-              style={{
-                color: klineConfig.riseColor,
-              }}
-            >
-              {details.limit_up}
-            </span>
-          </li>
-          <li>
-            跌停:{' '}
-            <span
-              style={{
-                color: klineConfig.fallColor,
-              }}
-            >
-              {details.limit_down}
-            </span>
-          </li>
-          <li>量比: {details.volume_ratio}</li>
-          <li>换手率: {details.turnover_rate}%</li>
-          <li>市盈率(静): {details.pe_lyr}</li>
-          <li>市盈率(动): {details.pe_forecast}</li>
-          <li>市盈率(TTM): {details.pe_ttm}</li>
-          <li>市值: {formatVolume(details.market_capital)}</li>
+        <ul className="flex flex-wrap">
+          {indicatorConfig.map((item, index) => {
+            // 从 details 对象中安全地获取值
+            let rawValue = details[item.field];
+
+            // 格式化值 (如果配置了格式化函数)
+            if (!rawValue) {
+              rawValue = '';
+            }
+            const displayValue = item.formatValue
+              ? item.formatValue(rawValue as number)
+              : String(rawValue);
+
+            // 计算样式 (如果配置了颜色函数)
+            const textStyle = item.getColor
+              ? { color: item.getColor(rawValue, details, klineConfig) }
+              : undefined; // 没有样式时为 undefined
+
+            return (
+              <li key={index} className="text-[13px] w-[150px] py-[5px]">
+                <span>{item.label}:</span>{' '}
+                {textStyle ? (
+                  <span style={textStyle}>{displayValue}</span>
+                ) : (
+                  displayValue
+                )}
+              </li>
+            );
+          })}
         </ul>
+        <StockRemark code={code} />
       </div>
     );
 }

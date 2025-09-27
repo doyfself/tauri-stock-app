@@ -27,13 +27,13 @@ export default function StockRemark({ code }: { code: string }) {
     }
   };
   return (
-    <div className="flex gap-10">
+    <div className="mt-[20px]">
       <Input.TextArea
-        rows={2}
+        rows={5}
         disabled={!isEditing}
         style={{
           color: 'red',
-          fontSize: '16px',
+          fontSize: '13px',
         }}
         value={remark}
         onChange={(e) => setRemark(e.target.value)}
@@ -44,9 +44,18 @@ export default function StockRemark({ code }: { code: string }) {
         </Button>
       )}
       {isEditing && (
-        <Button type="primary" onClick={onFinish}>
-          完成
-        </Button>
+        <div className="flex gap-[10px] mt-[10px]">
+          <Button
+            type="default"
+            onClick={() => setIsEditing(false)}
+            size="small"
+          >
+            取消
+          </Button>
+          <Button type="primary" onClick={onFinish} size="small">
+            完成
+          </Button>
+        </div>
       )}
     </div>
   );

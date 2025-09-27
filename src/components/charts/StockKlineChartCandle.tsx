@@ -28,7 +28,7 @@ export default function StockKlineChartCandle({
               y={isRise ? mapToSvg(item.close) : mapToSvg(item.open)}
               width={klineConfig.candleWidth}
               height={Math.abs(mapToSvg(item.close) - mapToSvg(item.open)) | 1}
-              fill={isRise ? 'white' : klineConfig.fallColor}
+              fill={isRise ? klineConfig.riseColor : klineConfig.fallColor}
               stroke={fillColor}
               strokeWidth={1}
             />

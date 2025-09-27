@@ -7,14 +7,7 @@ export const StockKlineChartVolumeBar = ({
   data,
 }: Pick<StockKlineChartVolumeProps, 'index' | 'data'>) => {
   return (
-    <div
-      style={{
-        backgroundColor: '#eff3f7',
-        borderBottom: '1px solid #e5e5e5',
-        fontSize: '12px',
-        padding: '5px 10px',
-      }}
-    >
+    <div className="bg-[#23272D] text-[12px] px-[10px] py-[5px] text-[#fff]">
       成交量：{formatVolume(data[index]?.volume || 0)}
     </div>
   );
@@ -36,9 +29,7 @@ export default function StockKlineChartVolume({
           y="0"
           width={width}
           height={klineConfig.volumeHeight}
-          fill="#f9f9f9"
-          stroke="#e0e0e0"
-          strokeWidth={1}
+          fill="#191B1F"
         />
         {data.map((item, index) => {
           const isRise = item.close >= item.open;
@@ -52,7 +43,7 @@ export default function StockKlineChartVolume({
               y={mapToSvg(item.volume)}
               width={klineConfig.candleWidth}
               height={klineConfig.volumeHeight - mapToSvg(item.volume)}
-              fill={isRise ? 'red' : 'green'}
+              fill={isRise ? klineConfig.riseColor : klineConfig.fallColor}
               stroke={fillColor}
               strokeWidth={1}
             />

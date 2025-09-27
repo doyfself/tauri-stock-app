@@ -1,3 +1,5 @@
+@import 'tailwindcss/preflight';
+@tailwind utilities;
 ul,
 body,
 html {
@@ -6,54 +8,4 @@ html {
 }
 li {
   list-style: none;
-}
-.flex {
-  display: flex;
-}
-.flex-1 {
-  flex: 1;
-}
-.flex-col {
-  flex-direction: column;
-}
-.flex-wrap {
-  flex-wrap: wrap;
-}
-.gap-10 {
-  gap: 10px;
-}
-.gap-20 {
-  gap: 20px;
-}
-.w100p {
-  width: 100%;
-}
-.h100p {
-  height: 100%;
-}
-.overflow-auto {
-  overflow: auto;
-}
-.overflow-hidden {
-  overflow: hidden;
-}
-
-.absolute {
-  position: absolute;
-}
-.relative {
-  position: relative;
-}
-
-.app-container {
-  width: 100vw;
-  height: 100vh;
-  position: relative;
-  overflow: hidden;
-}
-.main-content {
-  width: 100vw;
-  height: 100vh;
-  padding: 66px 10px 10px 10px;
-  box-sizing: border-box;
 }

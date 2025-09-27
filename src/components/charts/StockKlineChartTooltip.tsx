@@ -39,8 +39,8 @@ export default function StockKlineChartTooltip({
           y="0"
           width="160"
           height="180"
-          fill="#f9f9f9"
-          stroke="#e0e0e0"
+          fill="#1E2124"
+          stroke="#30343A"
           strokeWidth={1}
         ></rect>
         {rows.map((row, i) => (
@@ -48,7 +48,7 @@ export default function StockKlineChartTooltip({
             {/* 标题：右对齐 */}
             <text
               fontSize={12}
-              fill="#666"
+              fill="#FFF"
               textAnchor="end" // 右对齐
               dx={0} // 距离右侧的间距
               width={80} // 标题的固定宽度

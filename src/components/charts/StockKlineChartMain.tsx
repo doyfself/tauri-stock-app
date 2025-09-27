@@ -6,7 +6,6 @@ import StockKlineChartDetails from './StockKlineChartDetails';
 import StockKlineChartTooltip from './StockKlineChartTooltip';
 import StockKlineChartLine from './StockKlineChartLine';
 import StockKlineChartDrawLine from './StockKlineChartDrawLine';
-import StockRemark from './StockRemark';
 import { formatDate, isInStockTradingTime } from '@/utils/common';
 import StockKlineChartVolume, {
   StockKlineChartVolumeBar,
@@ -14,7 +13,6 @@ import StockKlineChartVolume, {
 import StockKlineChartStick from './StockKlineChartStick';
 import { mapKlineToSvg, calculateMA } from './util';
 import klineConfig from './config';
-import { Radio } from 'antd';
 import { useEffect, useState, useMemo } from 'react';
 import { getKlineDataApi } from '@/apis/api';
 import type { KlineDataResponse } from '@/types/response';
@@ -23,7 +21,6 @@ export default function StockKlineChartMain({
   width,
   height,
   timestamp = '',
-  limit = 100,
   onlyShow = false,
 }: StockKlineChartMainProps) {
   const [data, setData] = useState<KlineDataResponse[]>([]);
@@ -36,19 +33,27 @@ export default function StockKlineChartMain({
   );
   const [selectIndex, setSelectIndex] = useState<number>(0);
   const [isHovered, setIsHovered] = useState(false);
+  const [limit, setLimit] = useState(0);
+  useEffect(() => {
+    setLimit(
+      Math.floor(
+        (width - klineConfig.right) /
+          (klineConfig.candleWidth + klineConfig.candleMargin * 2),
+      ),
+    );
+  }, [width]);
   useEffect(() => {
     // 存储定时器ID，用于清理
     let intervalId: NodeJS.Timeout;
     // 定义获取K线数据的函数
     const fetchKlineData = async () => {
-      if (code) {
+      if (code && limit > 0) {
         const response = await getKlineDataApi(code, period, timestamp, limit);
         if (response && response.data) {
-          let newData = response.data.map((item) => {
+          const newData = response.data.map((item) => {
             item.date = formatDate(item.date, 'YYYY-MM-DD HH:mm');
             return item;
           });
-          newData = newData.slice(Math.max(newData.length - 100, 0));
           setData(newData);
           setSelectIndex(newData.length - 1);
           const maxPrice = Math.max(...newData.map((item) => item.high));
@@ -98,7 +103,7 @@ export default function StockKlineChartMain({
 
   return (
     <div style={{ width: width + 'px' }}>
-      <StockKlineChartDetails code={code} onlyShow={onlyShow} />
+      {onlyShow && <StockKlineChartDetails code={code} onlyShow={onlyShow} />}
       <StockKlineChartPeriodSwtich period={period} setPeriod={setPeriod} />
       {maData.length && (
         <StockKlineChartMABar maData={maData} index={selectIndex} />
@@ -174,7 +179,6 @@ export default function StockKlineChartMain({
         index={selectIndex}
         isHovered={isHovered}
       />
-      {!onlyShow && <StockRemark code={code} />}
     </div>
   );
 }
@@ -187,18 +191,22 @@ const StockKlineChartPeriodSwtich = ({
   setPeriod,
 }: StockKlineChartPeriodSwtichProps) => {
   return (
-    <Radio.Group
-      block
-      defaultValue={period}
-      size="small"
-      onChange={(e) => setPeriod(e.target.value)}
-    >
-      {klineConfig.periodSelectOptions.map((item) => (
-        <Radio.Button value={item.value} key={item.value}>
-          {item.label}
-        </Radio.Button>
-      ))}
-    </Radio.Group>
+    <div className="bg-[#31343A] w100p flex border-[#100F12] border-t-1 border-b-1">
+      <ul className="flex items-center bg-[#100F12] gap-px h-[25px] pl-px pr-px">
+        {klineConfig.periodSelectOptions.map((item) => (
+          <li
+            key={item.value}
+            onClick={() => setPeriod(item.value)}
+            className="text-[#fff] h-full w-[50px] flex justify-center items-center text-[12px] cursor-pointer"
+            style={{
+              background: period === item.value ? '#535A64' : '#30333A',
+            }}
+          >
+            {item.label}
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 };
 type StockKlineChartBarProps = {
@@ -207,14 +215,7 @@ type StockKlineChartBarProps = {
 };
 const StockKlineChartMABar = ({ index, maData }: StockKlineChartBarProps) => {
   return (
-    <div
-      style={{
-        backgroundColor: '#eff3f7',
-        borderBottom: '1px solid #e5e5e5',
-        fontSize: '12px',
-        padding: '5px 10px',
-      }}
-    >
+    <div className="bg-[#23272D] text-[12px] px-[10px] py-[5px]">
       {klineConfig.averageLineConfig.map((item, i) => {
         return (
           <span key={item.period} style={{ color: item.color }}>

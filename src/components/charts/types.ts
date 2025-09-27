@@ -14,7 +14,6 @@ export interface StockKlineChartMainProps {
   width: number;
   height: number;
   timestamp?: string;
-  limit?: number;
   onlyShow?: boolean; // 仅展示，不启动轮询
 }
 export interface StockKlineChartChildProps

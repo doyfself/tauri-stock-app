@@ -12,15 +12,7 @@ export default function StockKlineChartBg({
   const candleAreaHeight = height - klineConfig.padding * 2;
   return (
     <g>
-      <rect
-        x="0"
-        y="0"
-        width={width}
-        height={height}
-        fill="#f9f9f9"
-        stroke="#e0e0e0"
-        strokeWidth={1}
-      />
+      <rect x="0" y="0" width={width} height={height} fill="#191B1F" />
       {Array.from({ length: 6 }).map((_, i) => {
         const x1 = 0;
         const y = klineConfig.padding + (i * candleAreaHeight) / 5;
@@ -32,7 +24,7 @@ export default function StockKlineChartBg({
               y1={y}
               x2={x2}
               y2={y}
-              stroke="#e0e0e0"
+              stroke="#535964"
               strokeWidth={0.5}
             />
             <text

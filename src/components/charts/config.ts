@@ -3,8 +3,8 @@ const klineConfig = {
   right: 60, // 右侧留白
   candleWidth: 6, // K线实体宽度
   candleMargin: 2, // K线间距
-  riseColor: '#f44336', // 涨颜色
-  fallColor: '#4caf50', // 跌颜色
+  riseColor: '#CA4A47', // 涨颜色
+  fallColor: '#56A870', // 跌颜色
   volumeHeight: 100, // 成交量高度
   volumePaddingTop: 20, // 成交量顶部留白
   averageLineConfig: [

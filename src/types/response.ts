@@ -70,8 +70,10 @@ export type SingleStockDetailsInvokeReturn = Promise<
 
 export type SelectionDetailsType = Pick<
   SingleStockDetailsType,
-  'symbol' | 'name' | 'current' | 'percent'
->;
+  'name' | 'current' | 'percent'
+> & {
+  code: string;
+};
 export type GetSelectionDetailsInvokeReturn = Promise<
   ResponseBaseType<SelectionDetailsType[]>
 >;

@@ -7,7 +7,6 @@ import type { SelectionItem, SelectionDetailsType } from '@/types/response';
 import { useSelectionStore } from '@/stores/userStore';
 import { useEffect, useState, type MouseEvent } from 'react';
 import { isInStockTradingTime } from '@/utils/common';
-import './index.css';
 import { useNavigate } from 'react-router-dom';
 import { SwapOutlined } from '@ant-design/icons';
 import { Modal, InputNumber, type InputNumberProps } from 'antd';
@@ -130,9 +129,11 @@ export default function App({ code }: { code: string }) {
   }, [current, baseData, navigate]);
   return (
     <>
-      <div className="selection-list">
-        <div className="selection-list-title">自选</div>
-        <div className="selection-list-header">
+      <div className="w-[200px] text-[#fff] h-full border-r-1 border-[#0F1011]">
+        <div className="bg-[##535A65] text-[14px]  h-[30px] flex justify-center items-center">
+          自选
+        </div>
+        <div className="bg-[#23272D] text-[12px] flex items-center justify-between h-[20px] pl-[5px] pr-[5px]">
           <span>名称</span>
           <span>涨幅/现价</span>
         </div>
@@ -142,18 +143,25 @@ export default function App({ code }: { code: string }) {
             dynamicData.map((item, index) => {
               return (
                 <li
-                  className={index === current ? 'active' : ''}
+                  style={{
+                    background: index === current ? '#2E4365' : '#1A1B1F',
+                  }}
+                  className="flex items-center pl-[5px] pr-[5px] h-[50px] justify-between border-b border-[#24262D] text-[13px]"
                   onClick={() => scanDetails(baseData[index].code)}
                   key={item.code}
                 >
                   <div className="flex">
-                    <div className="selection-number">
+                    <div>
                       {index + 1}
-                      <div onClick={(e) => sortSelection(e, index)}>
+                      <div
+                        onClick={(e) => sortSelection(e, index)}
+                        className="cursor-pointer rotate-90"
+                      >
                         <SwapOutlined />
                       </div>
                     </div>
                     <div
+                      className="ml-[5px]"
                       style={{
                         color:
                           (baseData[index] && baseData[index].color) || '#000',
