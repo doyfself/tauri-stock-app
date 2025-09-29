@@ -55,7 +55,7 @@ export default function BottomBar() {
     };
   }, []);
   return (
-    <div className="flex items-center text-[#fff] text-[13px] h-[25px] gap-[20px] pl-[10px]">
+    <div className="flex items-center text-[#fff] text-[13px] h-[25px] gap-[20px] pl-[10px] absolute left-[0] bottom-[0]">
       {dynamicData.map((item, index) => {
         return (
           <div

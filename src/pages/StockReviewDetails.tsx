@@ -30,37 +30,38 @@ export default function StockReviewDetails() {
   };
   if (data) {
     return (
-      <div className="pv-details-container">
-        <h2 style={{ color: '#924c96' }}>{data.title}</h2>
-        <StockKlineChartMain
-          code={addStockCodePrefix(data.code)}
-          width={800}
-          height={300}
-          timestamp={data.date}
-          limit={50}
-          onlyShow={true}
-        />
-        <p dangerouslySetInnerHTML={{ __html: data.description }}></p>
-        <div className="flex">
-          <Button
-            type="link"
-            icon={<LeftOutlined />}
-            onClick={() => navigate(-1)}
-          >
-            返回
-          </Button>
-          <Button type="link" onClick={editReview}>
-            编辑
-          </Button>
-        </div>
+      <div className="flex justify-center text-[16px] text-[#fff]">
+        <div className="w-[800px] flex flex-col gap-[10px] pt-[20px]">
+          <h2 className="text-[20px] text-[#924c96]">{data.title}</h2>
+          <StockKlineChartMain
+            code={addStockCodePrefix(data.code)}
+            width={800}
+            height={300}
+            timestamp={data.date}
+            onlyShow={true}
+          />
+          <p dangerouslySetInnerHTML={{ __html: data.description }}></p>
+          <div className="flex">
+            <Button
+              type="link"
+              icon={<LeftOutlined />}
+              onClick={() => navigate(-1)}
+            >
+              返回
+            </Button>
+            <Button type="link" onClick={editReview}>
+              编辑
+            </Button>
+          </div>
 
-        <ReflectSelectionModal
-          modalOpen={modalOpen}
-          setModalOpen={setModalOpen}
-          type={type as string}
-          initList={initData}
-          initData={data}
-        />
+          <ReflectSelectionModal
+            modalOpen={modalOpen}
+            setModalOpen={setModalOpen}
+            type={type as string}
+            initList={initData}
+            initData={data}
+          />
+        </div>
       </div>
     );
   }

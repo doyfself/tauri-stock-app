@@ -8,7 +8,6 @@ import {
   List,
   Popconfirm,
 } from 'antd';
-import './StockReview.css';
 import type { Moment } from 'moment';
 import moment from 'moment';
 import { useEffect, useState } from 'react';
@@ -52,8 +51,12 @@ export default function StockReview() {
     setModalOpen(true);
   };
   return (
-    <div className="relative w100p h100p overflow-hidden">
-      <Button type="primary" className="rs-add-button" onClick={addReview}>
+    <div className="relative flex justify-center pt-[50px]">
+      <Button
+        type="primary"
+        className="absolute top-[20px] right-[20px]"
+        onClick={addReview}
+      >
         新增领悟
       </Button>
       <ReflectSelectionModal
@@ -63,8 +66,10 @@ export default function StockReview() {
         initList={initList}
         initData={null}
       />
-      <div className="rs-search-area">
-        <h1>{type === 'position' ? '持仓三省' : '欲购三省'}</h1>
+      <div className="w-1/2">
+        <h1 className="text-[#fff] text-[32px]">
+          {type === 'position' ? '持仓三省' : '欲购三省'}
+        </h1>
         <Input.Search
           placeholder="输入问题"
           allowClear
@@ -73,7 +78,6 @@ export default function StockReview() {
           onSearch={onSearch}
         />
         <List
-          size="large"
           footer={more ? <div>show more</div> : null}
           bordered
           dataSource={showData}

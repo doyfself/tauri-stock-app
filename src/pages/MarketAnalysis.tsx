@@ -22,14 +22,12 @@ const marketsCodes = [
 
 const getBgColor = (status: string) => {
   switch (status) {
-    case '观察':
-      return 'white';
     case '看多':
-      return '#b4ffd8';
+      return '#CA4A47';
     case '看空':
-      return '#ff7047';
+      return '#56A870';
     default:
-      return 'white';
+      return '#323439';
   }
 };
 
@@ -63,8 +61,8 @@ export default function MarketAnalysis() {
     initData();
   };
   return (
-    <div className="flex h100p gap-20">
-      <div className="flex flex-col gap-10 overflow-auto h100p">
+    <div className="flex h-full gap-[20px] overflow-hidden">
+      <div className="flex flex-col gap-[10px] h-full overflow-auto">
         {marketsCodes.map((item) => {
           return (
             <div className="flex gap-20" key={`market-analysis-${item.code}`}>
@@ -73,7 +71,6 @@ export default function MarketAnalysis() {
                 width={800}
                 height={300}
                 timestamp={threePmTimestamp}
-                limit={80}
                 onlyShow={true}
               />
             </div>

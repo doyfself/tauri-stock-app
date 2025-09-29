@@ -1,5 +1,4 @@
 import { formatVolume } from './util';
-import './index.css';
 import { Button } from 'antd';
 import klineConfig from './config';
 import { useSelectionStore } from '@/stores/userStore';
@@ -208,12 +207,8 @@ export default function StockKlineChartDetails({
   };
   if (onlyShow && details) {
     return (
-      <div className="stock-details">
-        <div className="header">
-          <div>
-            {details.name}({details.symbol})
-          </div>
-        </div>
+      <div className="text-[#fff] text-[16px]">
+        {details.name}({details.symbol})
       </div>
     );
   }

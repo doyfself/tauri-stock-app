@@ -122,7 +122,7 @@ export default function StockKlineChartDrawLine({
         width: width + 'px',
       }}
     >
-      <div className="absolute flex drawing-button">
+      <div className="cursor-default absolute flex right-[10px] top-[-27px] items-center text-[12px] h-[27px] gap-[10px] text-[#1576e8]">
         {drawing ? (
           <>
             <div onClick={cancelDrawing}>取消</div>
@@ -172,8 +172,8 @@ export default function StockKlineChartDrawLine({
               y1={mousePos.y}
               x2={width}
               y2={mousePos.y}
-              stroke="#333" // 红色引导线，区分主线条
-              strokeWidth={1.3}
+              stroke="#EA6A2C" // 红色引导线，区分主线条
+              strokeWidth={1.5}
               strokeOpacity={0.6}
               strokeDasharray="3,3" // 虚线样式
             />
