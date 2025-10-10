@@ -5,6 +5,8 @@ const klineConfig = {
   candleMargin: 2, // K线间距
   riseColor: '#CA4A47', // 涨颜色
   fallColor: '#56A870', // 跌颜色
+  barHeight: 25, // bar高度
+  newsAreaHeight: 200, // 资讯区域高度
   volumeHeight: 100, // 成交量高度
   volumePaddingTop: 20, // 成交量顶部留白
   averageLineConfig: [
@@ -57,6 +59,10 @@ const klineConfig = {
     {
       label: '1m',
       value: '1m',
+    },
+    {
+      label: '分时',
+      value: 'time',
     },
   ], // 可选均线周期
 };

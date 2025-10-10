@@ -7,7 +7,13 @@ export const StockKlineChartVolumeBar = ({
   data,
 }: Pick<StockKlineChartVolumeProps, 'index' | 'data'>) => {
   return (
-    <div className="bg-[#23272D] text-[12px] px-[10px] py-[5px] text-[#fff]">
+    <div
+      className="bg-[#23272D] text-[12px] px-[10px] text-[#fff]"
+      style={{
+        height: klineConfig.barHeight + 'px',
+        lineHeight: klineConfig.barHeight + 'px',
+      }}
+    >
       成交量：{formatVolume(data[index]?.volume || 0)}
     </div>
   );

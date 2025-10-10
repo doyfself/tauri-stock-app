@@ -104,3 +104,30 @@ pub struct GetStockDataParams {
     pub timestamp: Option<String>, // 起始时间戳（可选）
     pub limit: i32,                // 数据条数
 }
+/// 分时图请求参数
+#[derive(Debug, Deserialize)]
+pub struct GetMinuteDataParams {
+    pub code: String, // 股票代码（如 SH600000）            // 数据条数
+}
+
+/// 分时图数据的顶层响应结构体
+/// 匹配格式: { data: { items: [...] } }
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct MinuteChartResponse {
+    pub data: MinuteChartData,
+}
+
+/// 包含分时图项目数组的结构体
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct MinuteChartData {
+    pub items: Vec<MinuteChartItem>,
+}
+
+/// 单个分时数据点
+/// 匹配格式: { percent: -0.47, timestamp: 1760059800000, volume: 320500 }
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct MinuteChartItem {
+    pub percent: f64,
+    pub timestamp: i64,
+    pub volume: i64,
+}

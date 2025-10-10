@@ -28,3 +28,14 @@ export const useSelectionLineStore = create<SelectionStore>((set) => ({
       refreshFlag: state.refreshFlag + 1,
     })),
 }));
+interface WindowSizeStore {
+  width: number;
+  height: number;
+  setZise: (width: number, height: number) => void;
+}
+
+export const useWindowSizeStore = create<WindowSizeStore>((set) => ({
+  width: 0,
+  height: 0,
+  setZise: (width: number, height: number) => set(() => ({ width, height })),
+}));

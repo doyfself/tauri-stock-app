@@ -29,6 +29,7 @@ pub fn run() {
             command::xueqiu_command::get_kline_data,
             command::xueqiu_command::get_batch_stock_quote,
             command::xueqiu_command::get_single_stock_detail,
+            command::xueqiu_command::get_minute_chart,
             command::stock_lines_command::add_stock_lines_cmd,
             command::stock_lines_command::query_stock_lines_cmd,
             command::stock_lines_command::delete_stock_line_cmd,

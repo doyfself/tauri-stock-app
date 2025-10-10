@@ -193,7 +193,6 @@ export default function StockKlineChartDetails({
     }
   };
   const markColorEvent = async (key: string) => {
-    console.log(currentSelection);
     if (inSelection && details) {
       const selection = {
         ...currentSelection,
@@ -253,18 +252,20 @@ export default function StockKlineChartDetails({
               删自选
             </Button>
           )}
-          <ul className="flex items-center gap-[6px] mt-[10px] mb-[10px]">
-            {Object.keys(markColors).map((key) => (
-              <li
-                className="w-[14px] h-[14px] cursor-pointer rounded-[2px]"
-                onClick={() => markColorEvent(key)}
-                key={key}
-                style={{
-                  backgroundColor: markColors[key],
-                }}
-              ></li>
-            ))}
-          </ul>
+          {inSelection && (
+            <ul className="flex items-center gap-[6px] mt-[10px] mb-[10px]">
+              {Object.keys(markColors).map((key) => (
+                <li
+                  className="w-[14px] h-[14px] cursor-pointer rounded-[2px]"
+                  onClick={() => markColorEvent(key)}
+                  key={key}
+                  style={{
+                    backgroundColor: markColors[key],
+                  }}
+                ></li>
+              ))}
+            </ul>
+          )}
         </div>
         <ul className="flex flex-wrap">
           {indicatorConfig.map((item, index) => {
@@ -296,7 +297,7 @@ export default function StockKlineChartDetails({
             );
           })}
         </ul>
-        <StockRemark code={code} />
+        {inSelection && <StockRemark code={code} />}
       </div>
     );
 }

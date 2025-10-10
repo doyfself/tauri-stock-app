@@ -20,6 +20,11 @@ export const getKlineDataApi = (
     },
   });
 
+export const getMinuteDataByCode = (code: string) =>
+  invoke<responseType.GetStockMinuteDataInvokeReturn>('get_minute_chart', {
+    code,
+  });
+
 export const getAllSelectionsApi = () =>
   invoke<responseType.GetAllSelectionInvokeReturn>('get_all_selections_cmd');
 

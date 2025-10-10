@@ -64,8 +64,18 @@ export interface SingleStockDetailsType {
   volume_ratio: number; // 量比
   turnover_rate: number; // 换手率
 }
+
 export type SingleStockDetailsInvokeReturn = Promise<
   ResponseBaseType<SingleStockDetailsType>
+>;
+
+export interface StockMinuteItem {
+  timestamp: number; // 时间戳
+  percent: number; // 涨跌幅
+  volume: number; // 成交量
+}
+export type GetStockMinuteDataInvokeReturn = Promise<
+  ResponseBaseType<StockMinuteItem[]>
 >;
 
 export type SelectionDetailsType = Pick<

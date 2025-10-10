@@ -1,6 +1,5 @@
 import klineConfig from './config';
 import type { KlineDataType } from './types';
-import type { LinePoint } from '@/apis/api';
 export function mapKlineToSvg(
   svgHeight: number,
   minPrice: number,

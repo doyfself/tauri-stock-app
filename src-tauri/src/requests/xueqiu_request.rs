@@ -1,6 +1,6 @@
 use crate::requests::common::create_xueqiu_http_client;
 use crate::structs::xueqiu_structs::{
-    RawBatchQuoteResponse, RawKlineResponse, RawStockDetailResponse,
+    MinuteChartResponse, RawBatchQuoteResponse, RawKlineResponse, RawStockDetailResponse,
 };
 use tauri::AppHandle;
 
@@ -128,4 +128,48 @@ pub async fn fetch_raw_stock_detail(
         .map_err(|e| format!("单只股票详情JSON解析失败: {}", e))?;
 
     Ok(raw_response)
+}
+
+pub async fn fetch_minute_chart(
+    app: &AppHandle,
+    code: &str,
+) -> Result<MinuteChartResponse, String> {
+    // 1. 构建请求 URL
+    // 注意：URL中的 `period=1d` 是固定的，表示获取一天的数据
+    let url = format!(
+        "https://stock.xueqiu.com/v5/stock/chart/minute.json?symbol={}&period=1d",
+        code
+    );
+    println!("分时图数据请求URL: {}", url);
+
+    // 2. 创建 HTTP 客户端（复用统一的 Cookie 和超时逻辑）
+    let client =
+        create_xueqiu_http_client(app).map_err(|e| format!("HTTP客户端创建失败: {}", e))?;
+
+    // 3. 发送请求
+    let response = client
+        .get(&url)
+        .send()
+        .await
+        .map_err(|e| format!("分时图数据请求发送失败: {}", e))?;
+
+    // 4. 检查响应状态
+    if !response.status().is_success() {
+        let status = response.status();
+        let err_msg = if status.as_u16() == 401 || status.as_u16() == 403 {
+            "Cookie已过期或无效，请重新登录。".to_string()
+        } else {
+            format!("分时图API请求失败，状态码: {}", status)
+        };
+        return Err(err_msg);
+    }
+
+    // 5. 解析JSON响应
+    // 使用 .json() 方法直接将响应体解析为我们定义的 MinuteChartResponse 结构体
+    let chart_data = response
+        .json::<MinuteChartResponse>()
+        .await
+        .map_err(|e| format!("分时图JSON解析失败: {}", e))?;
+
+    Ok(chart_data)
 }

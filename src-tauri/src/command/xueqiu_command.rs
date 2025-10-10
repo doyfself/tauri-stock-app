@@ -1,9 +1,9 @@
 use crate::requests::xueqiu_request::{
-    fetch_raw_batch_quote, fetch_raw_kline_data, fetch_raw_stock_detail,
+    fetch_minute_chart, fetch_raw_batch_quote, fetch_raw_kline_data, fetch_raw_stock_detail,
 };
 use crate::structs::xueqiu_structs::{
-    GetStockDataParams, RawBatchQuoteData, RawBatchQuoteItem, RawKlineData, RawStockDetailData,
-    StockKlineItem, StockQuote,
+    GetMinuteDataParams, GetStockDataParams, MinuteChartResponse, RawBatchQuoteData,
+    RawBatchQuoteItem, RawKlineData, RawStockDetailData, StockKlineItem, StockQuote,
 };
 use chrono::Utc;
 use serde_json;
@@ -215,5 +215,43 @@ pub async fn get_single_stock_detail(
         "message": format!("成功获取 {} 的详情数据", code),
         "data": stock_detail,
         "count": 1 // 单只股票，count 固定为 1
+    }))
+}
+
+#[command]
+pub async fn get_minute_chart(app: AppHandle, code: &str) -> Result<serde_json::Value, String> {
+    if code.is_empty() {
+        return Ok(serde_json::json!({
+            "success": false,
+            "message": "股票代码不能为空（如 SH600009）",
+            "data": {},
+            "count": 0
+        }));
+    }
+
+    // 2. 调用爬取函数获取原始数据
+    // 这里调用的是我们上一步实现的 fetch_minute_chart
+    let raw_response: MinuteChartResponse = fetch_minute_chart(&app, &code).await?;
+
+    // 3. 提取数据并准备返回（处理空数据的情况）
+    let items = raw_response.data.items;
+    let count = items.len();
+
+    if items.is_empty() {
+        return Ok(serde_json::json!({
+            "success": false,
+            "message": format!("未获取到 {} 的分时数据（可能非交易日或股票停牌）", code),
+            "data": {},
+            "count": 0
+        }));
+    }
+
+    // 4. 返回成功 JSON
+    // 将 items (Vec<MinuteChartItem>) 直接放入 data 字段
+    Ok(serde_json::json!({
+        "success": true,
+        "message": format!("成功获取 {} 的分时数据，共 {} 条", code, count),
+        "data": items, // serde_json 会自动将 Vec 序列化为 JSON 数组
+        "count": count
     }))
 }

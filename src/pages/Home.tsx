@@ -40,39 +40,6 @@ export default function Home() {
       >
         爬取所有 A 股股票数据
       </Button>
-      <UpdateCookie />
     </div>
-  );
-}
-
-function UpdateCookie() {
-  const [cookie, setCookie] = useState('');
-  const [successText, setSuccessText] = useState('');
-  const submitCookie = () => {
-    // 提交新的 Cookie 值到后端
-    invoke('save_xueqiu_cookie', { cookie })
-      .then(() => {
-        setSuccessText('更新成功');
-      })
-      .catch(() => {
-        setSuccessText('更新失败');
-      });
-  };
-  return (
-    <>
-      <Input.TextArea
-        rows={4}
-        placeholder="请输入新的 Cookie 值"
-        onChange={(e) => setCookie(e.target.value)}
-      />
-      <Button
-        type="primary"
-        style={{ marginTop: '10px' }}
-        onClick={submitCookie}
-      >
-        更新 Cookie
-      </Button>
-      <span>{successText}</span>
-    </>
   );
 }

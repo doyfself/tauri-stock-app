@@ -7,6 +7,7 @@ import StockKlineChartTooltip from './StockKlineChartTooltip';
 import StockKlineChartLine from './StockKlineChartLine';
 import StockKlineChartDrawLine from './StockKlineChartDrawLine';
 import { formatDate, isInStockTradingTime } from '@/utils/common';
+import StockKlineChartTimeLine from './StockKlineChartTimeLine';
 import StockKlineChartVolume, {
   StockKlineChartVolumeBar,
 } from './StockKlineChartVolume';
@@ -34,6 +35,12 @@ export default function StockKlineChartMain({
   const [selectIndex, setSelectIndex] = useState<number>(0);
   const [isHovered, setIsHovered] = useState(false);
   const [limit, setLimit] = useState(0);
+  const candleHeight = onlyShow
+    ? height
+    : height -
+      klineConfig.volumeHeight -
+      klineConfig.barHeight * 2 -
+      klineConfig.newsAreaHeight;
   useEffect(() => {
     setLimit(
       Math.floor(
@@ -43,6 +50,9 @@ export default function StockKlineChartMain({
     );
   }, [width]);
   useEffect(() => {
+    if (period === 'time') {
+      return;
+    }
     // 存储定时器ID，用于清理
     let intervalId: NodeJS.Timeout;
     // 定义获取K线数据的函数
@@ -86,8 +96,8 @@ export default function StockKlineChartMain({
   }, [code, period, onlyShow, timestamp, limit]);
   // 3. 缓存mapToSvg计算结果，依赖变化时再更新
   const mapToSvg = useMemo(
-    () => mapKlineToSvg(height, minPrice, maxPrice),
-    [height, minPrice, maxPrice],
+    () => mapKlineToSvg(candleHeight, minPrice, maxPrice),
+    [candleHeight, minPrice, maxPrice],
   );
 
   // 4. 计算MA数据
@@ -101,6 +111,17 @@ export default function StockKlineChartMain({
     }
   }, [data]);
 
+  if (period === 'time') {
+    return (
+      <div style={{ width: width + 'px' }}>
+        <StockKlineChartPeriodSwtich period={period} setPeriod={setPeriod} />
+        <StockKlineChartTimeLine width={width} height={height} code={code} />
+      </div>
+    );
+  }
+
+  console.log(candleHeight, 'candleHeight');
+
   return (
     <div style={{ width: width + 'px' }}>
       {onlyShow && <StockKlineChartDetails code={code} onlyShow={onlyShow} />}
@@ -109,10 +130,10 @@ export default function StockKlineChartMain({
         <StockKlineChartMABar maData={maData} index={selectIndex} />
       )}
       <div className="relative">
-        <svg width={width} height={height}>
+        <svg width={width} height={candleHeight}>
           <StockKlineChartBg
             width={width}
-            height={height}
+            height={candleHeight}
             maxPrice={maxPrice}
             minPrice={minPrice}
           />
@@ -133,7 +154,7 @@ export default function StockKlineChartMain({
 
           <StockKlineChartStick
             width={width}
-            height={height}
+            height={candleHeight}
             coordinateX={coordinateX}
             data={data}
             maxPrice={maxPrice}
@@ -150,7 +171,7 @@ export default function StockKlineChartMain({
               code={code}
               period={period}
               width={width}
-              height={height}
+              height={candleHeight}
             />
           )}
           <StockKlineChartTooltip
@@ -164,7 +185,7 @@ export default function StockKlineChartMain({
         {!onlyShow && (
           <StockKlineChartDrawLine
             width={width}
-            height={height}
+            height={candleHeight}
             code={code}
             period={period}
           />
@@ -215,7 +236,13 @@ type StockKlineChartBarProps = {
 };
 const StockKlineChartMABar = ({ index, maData }: StockKlineChartBarProps) => {
   return (
-    <div className="bg-[#23272D] text-[12px] px-[10px] py-[5px]">
+    <div
+      className="bg-[#23272D] text-[12px] px-[10px]"
+      style={{
+        height: klineConfig.barHeight + 'px',
+        lineHeight: klineConfig.barHeight + 'px',
+      }}
+    >
       {klineConfig.averageLineConfig.map((item, i) => {
         return (
           <span key={item.period} style={{ color: item.color }}>
