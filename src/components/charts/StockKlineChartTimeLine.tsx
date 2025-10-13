@@ -2,6 +2,7 @@ import { Fragment, useEffect, useState } from 'react';
 import { getMinuteDataByCode } from '@/apis/api';
 import type { StockMinuteItem } from '@/types/response';
 import StockKlineChartTimeBg from './StockKlineChartTimeBg';
+import { getStockPriceRangeByCode } from './util';
 interface StockMinuteChartProps {
   width: number;
   height: number;
@@ -51,22 +52,7 @@ const StockKlineChartTimeLine = ({
     const yBottomReserve = 45; // 背景组件Y轴底部预留高度（X轴标签）
     const validHeight = height - yTopPadding - yBottomReserve; // 背景组件的有效网格高度
 
-    // --- 计算Y轴坐标（匹配背景组件的percent范围）---
-    // 先获取股票的涨跌幅范围（复用背景组件的getStockPriceRangeByCode逻辑）
-    const getStockPriceRange = (code: string): number => {
-      const normalizedCode = code.trim().toUpperCase();
-      const codeMatch = normalizedCode.match(/^(SH|SZ)(\d{6})$/);
-      if (!codeMatch) return 10;
-      const coreCode = codeMatch[2];
-      const cybPrefix = ['300', '301', '302'];
-      const kcbPrefix = ['688', '689'];
-      const bsePrefix = ['889', '83', '87', '82'];
-      if (cybPrefix.some((p) => coreCode.startsWith(p))) return 20;
-      if (kcbPrefix.some((p) => coreCode.startsWith(p))) return 20;
-      if (bsePrefix.some((p) => coreCode.startsWith(p))) return 30;
-      return 10;
-    };
-    const priceRange = getStockPriceRange(code);
+    const priceRange = getStockPriceRangeByCode(code);
     const maxPercent = priceRange;
     const minPercent = -priceRange;
     const percentRange = maxPercent - minPercent; // 背景组件Y轴的percent总范围

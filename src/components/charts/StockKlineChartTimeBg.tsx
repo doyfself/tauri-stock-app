@@ -1,29 +1,5 @@
 import React, { Fragment } from 'react';
-import { formatNumber } from './util';
-
-/**
- * 根据带市场前缀的股票代码判断最大涨跌幅
- * @param code - 格式：sh/sz+6位数字（如sh600000、sz300001）
- * @returns 涨跌幅上限（20=±20%，10=±10%，30=±30%）
- */
-const getStockPriceRangeByCode = (code: string): number => {
-  const normalizedCode = code.trim().toUpperCase();
-  const codeMatch = normalizedCode.match(/^(SH|SZ)(\d{6})$/);
-  if (!codeMatch) {
-    console.warn(`股票代码格式错误：${code}，需为 sh/sz+6位数字`);
-    return 10;
-  }
-
-  const coreCode = codeMatch[2];
-  const cybPrefix = ['300', '301', '302']; // 创业板
-  const kcbPrefix = ['688', '689']; // 科创板
-  const bsePrefix = ['889', '83', '87', '82']; // 北交所
-
-  if (cybPrefix.some((p) => coreCode.startsWith(p))) return 20;
-  if (kcbPrefix.some((p) => coreCode.startsWith(p))) return 20;
-  if (bsePrefix.some((p) => coreCode.startsWith(p))) return 30;
-  return 10; // 主板/中小板
-};
+import { formatNumber, getStockPriceRangeByCode } from './util';
 
 // 分时图背景组件Props
 interface StockKlineChartTimeBgProps {

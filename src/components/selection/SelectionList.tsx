@@ -10,6 +10,7 @@ import { isInStockTradingTime } from '@/utils/common';
 import { useNavigate } from 'react-router-dom';
 import { SwapOutlined } from '@ant-design/icons';
 import { Modal, InputNumber, type InputNumberProps } from 'antd';
+import { useWindowSizeStore } from '@/stores/userStore';
 export default function App({ code }: { code: string }) {
   // 订阅刷新标识，当它变化时会触发组件更新
   const refreshFlag = useSelectionStore((state) => state.refreshFlag);
@@ -20,6 +21,7 @@ export default function App({ code }: { code: string }) {
   const [current, setCurrent] = useState(-1);
   const [target, setTarget] = useState(-1);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const { height: windowHeight } = useWindowSizeStore();
   const initData = async () => {
     // 获取自选列表
     const res = await getAllSelectionsApi();
@@ -129,7 +131,10 @@ export default function App({ code }: { code: string }) {
   }, [current, baseData, navigate]);
   return (
     <>
-      <div className="w-[200px] text-[#fff] h-full border-r-1 border-[#0F1011]">
+      <div
+        className="w-[200px] text-[#fff] flex flex-col border-r-1 border-[#0F1011]"
+        style={{ height: windowHeight + 'px' }}
+      >
         <div className="bg-[##535A65] text-[14px]  h-[30px] flex justify-center items-center">
           自选
         </div>
@@ -137,7 +142,7 @@ export default function App({ code }: { code: string }) {
           <span>名称</span>
           <span>涨幅/现价</span>
         </div>
-        <ul>
+        <ul className="flex-1 overflow-auto">
           {dynamicData &&
             dynamicData.length &&
             dynamicData.map((item, index) => {
@@ -164,7 +169,7 @@ export default function App({ code }: { code: string }) {
                       className="ml-[5px]"
                       style={{
                         color:
-                          (baseData[index] && baseData[index].color) || '#000',
+                          (baseData[index] && baseData[index].color) || '#fff',
                       }}
                     >
                       <div>{item.name}</div>

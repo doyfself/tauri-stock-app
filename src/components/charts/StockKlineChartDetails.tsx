@@ -114,17 +114,17 @@ export default function StockKlineChartDetails({
   );
   const [details, setDetails] = useState<SingleStockDetailsType | null>(null); // 用于存储股票详情数据
   const [inSelection, setInSelection] = useState(false);
-  const [currentSelection, setCurrentSelection] = useState<SelectionItem>();
+  const getCurrentSelection = async () => {
+    if (code) {
+      const res = await getSelectionByCode(code);
+      return res.data;
+    }
+  };
   useEffect(() => {
     const fn = async () => {
       if (!code) return;
       const res = await isSelectionExistsApi(code);
       setInSelection(res.data);
-
-      const selectionRes = await getSelectionByCode(code);
-      if (selectionRes && selectionRes.data) {
-        setCurrentSelection(selectionRes.data);
-      }
     };
     fn();
   }, [code]);
@@ -163,6 +163,7 @@ export default function StockKlineChartDetails({
     };
   }, [code]);
   const addSelection = async () => {
+    const currentSelection = inSelection ? await getCurrentSelection() : null;
     if (details) {
       const allSelections = await getAllSelectionsApi();
       const count = allSelections.count || 0;
@@ -175,7 +176,6 @@ export default function StockKlineChartDetails({
       };
       const res = await addSelectionApi(selection);
       if (res.data) {
-        setCurrentSelection(selection);
         setInSelection(true);
         triggerRefresh();
       } else {
@@ -193,6 +193,7 @@ export default function StockKlineChartDetails({
     }
   };
   const markColorEvent = async (key: string) => {
+    const currentSelection = await getCurrentSelection();
     if (inSelection && details) {
       const selection = {
         ...currentSelection,
