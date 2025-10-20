@@ -12,9 +12,9 @@ import {
 } from '@/apis/api';
 import type { SingleStockDetailsType, SelectionItem } from '@/types/response';
 import { useState, useEffect } from 'react';
-import { isInStockTradingTime } from '@/utils/common';
 import { PlusOutlined, MinusOutlined } from '@ant-design/icons';
 import StockRemark from './StockRemark';
+import useInterval from '@/hooks/useInterval';
 
 const markColors: Record<string, string> = {
   purple: '#B833A0',
@@ -128,40 +128,23 @@ export default function StockKlineChartDetails({
     };
     fn();
   }, [code]);
-  useEffect(() => {
-    // 存储定时器ID，用于清理
-    let intervalId: NodeJS.Timeout;
-
-    // 定义请求数据的函数
-    const fetchData = async () => {
-      if (code) {
-        try {
-          const response = await getSingleStockDetailsApi(code);
-          if (response && response.data) {
-            setDetails(response.data);
-          }
-        } catch (error) {
-          console.error('获取股票详情失败:', error);
-          // 可根据需求添加错误处理，如重试机制
+  const fetchData = async () => {
+    if (code) {
+      try {
+        const response = await getSingleStockDetailsApi(code);
+        if (response && response.data) {
+          setDetails(response.data);
         }
+      } catch (error) {
+        console.error('获取股票详情失败:', error);
+        // 可根据需求添加错误处理，如重试机制
       }
-    };
-
-    // 立即执行一次请求
-    fetchData();
-
-    // 设置轮询：每隔5秒请求一次（时间可根据需求调整）
-    if (code && isInStockTradingTime()) {
-      intervalId = setInterval(fetchData, 1000);
     }
-
-    // 清理函数：组件卸载或code变化时清除定时器
-    return () => {
-      if (intervalId) {
-        clearInterval(intervalId);
-      }
-    };
+  };
+  useEffect(() => {
+    fetchData();
   }, [code]);
+  useInterval(fetchData, 1000);
   const addSelection = async () => {
     const currentSelection = inSelection ? await getCurrentSelection() : null;
     if (details) {

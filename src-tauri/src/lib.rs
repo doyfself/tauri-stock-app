@@ -39,6 +39,10 @@ pub fn run() {
             command::stock_review_command::delete_stock_review_cmd,
             command::market_analysis_commands::add_market_analysis_cmd,
             command::market_analysis_commands::query_market_analysis_cmd,
+            command::self_reflect_command::get_self_reflect_list_cmd,
+            command::self_reflect_command::add_self_reflect_cmd,
+            command::self_reflect_command::get_single_self_reflect_cmd,
+            command::self_reflect_command::delete_self_reflect_cmd,
         ])
         .plugin(tauri_plugin_opener::init())
         .run(tauri::generate_context!())

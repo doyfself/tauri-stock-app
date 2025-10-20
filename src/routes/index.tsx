@@ -5,6 +5,8 @@ import StockDetails from '../pages/StockDetails';
 import StockReview from '@/pages/StockReview';
 import StockReviewDetails from '@/pages/StockReviewDetails';
 import MarketAnalysis from '@/pages/MarketAnalysis';
+import SelfReflect from '@/pages/SelfReflect';
+import SelfReflectDetails from '@/pages/SelfReflectDetails';
 export const routes: RouteObject[] = [
   {
     path: '/',
@@ -26,6 +28,14 @@ export const routes: RouteObject[] = [
       {
         path: '/sr/:type/:id',
         element: <StockReviewDetails />,
+      },
+      {
+        path: '/reflect',
+        element: <SelfReflect />,
+      },
+      {
+        path: '/reflect/:id',
+        element: <SelfReflectDetails />,
       },
     ],
   },

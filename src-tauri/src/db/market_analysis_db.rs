@@ -96,7 +96,7 @@ pub fn query_last_10_market_analysis(
             "SELECT date, analysis, status 
          FROM market_analysis 
          ORDER BY date DESC 
-         LIMIT 10",
+         LIMIT 6",
         )
         .map_err(|e| StockError::DbError(e))?;
 

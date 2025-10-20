@@ -106,7 +106,7 @@ export const addStockReviewApi = (req: {
   invoke<responseType.InvokeBooleanReturn>('add_stock_review_cmd', {
     req,
   });
-// 删除自选
+// 删除
 export const deleteStockReviewApi = (id: number) =>
   invoke<responseType.InvokeBooleanReturn>('delete_stock_review_cmd', {
     req: { id },
@@ -144,5 +144,31 @@ export const addStockLineApi = (
 
 export const deleteStockLineApi = (id: number) =>
   invoke<responseType.InvokeBooleanReturn>('delete_stock_line_cmd', {
+    req: { id },
+  });
+
+// 操作反省
+
+export const getSelfReflectApi = () =>
+  invoke<responseType.GetSelfReflectInvokeReturn>('get_self_reflect_list_cmd');
+
+export const getSingleSelfReflectApi = (id: number) =>
+  invoke<responseType.GetSingleSelfReflectInvokeReturn>(
+    'get_single_self_reflect_cmd',
+    { req: { id } },
+  );
+
+export const addSelfReflectApi = (req: {
+  id?: number;
+  code: string;
+  title: string;
+  date: string;
+  description: string;
+}) =>
+  invoke<responseType.InvokeBooleanReturn>('add_self_reflect_cmd', {
+    req,
+  });
+export const deleteSelfReflectApi = (id: number) =>
+  invoke<responseType.InvokeBooleanReturn>('delete_self_reflect_cmd', {
     req: { id },
   });

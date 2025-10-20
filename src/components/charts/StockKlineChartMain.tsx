@@ -8,13 +8,14 @@ import StockKlineChartLine from './StockKlineChartLine';
 import StockKlineChartDrawLine from './StockKlineChartDrawLine';
 import { formatDate, isInStockTradingTime } from '@/utils/common';
 import StockKlineChartTimeLine from './StockKlineChartTimeLine';
+import useInterval from '@/hooks/useInterval';
 import StockKlineChartVolume, {
   StockKlineChartVolumeBar,
 } from './StockKlineChartVolume';
 import StockKlineChartStick from './StockKlineChartStick';
 import { mapKlineToSvg, calculateMA } from './util';
 import klineConfig from './config';
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, use } from 'react';
 import { getKlineDataApi } from '@/apis/api';
 import type { KlineDataResponse } from '@/types/response';
 export default function StockKlineChartMain({
@@ -49,51 +50,36 @@ export default function StockKlineChartMain({
       ),
     );
   }, [width]);
-  useEffect(() => {
-    if (period === 'time') {
-      return;
-    }
-    // 存储定时器ID，用于清理
-    let intervalId: NodeJS.Timeout;
-    // 定义获取K线数据的函数
-    const fetchKlineData = async () => {
-      if (code && limit > 0) {
-        const response = await getKlineDataApi(code, period, timestamp, limit);
-        if (response && response.data) {
-          const newData = response.data.map((item) => {
-            item.date = formatDate(item.date, 'YYYY-MM-DD HH:mm');
-            return item;
-          });
-          setData(newData);
-          setSelectIndex(newData.length - 1);
-          const maxPrice = Math.max(...newData.map((item) => item.high));
-          const minPrice = Math.min(...newData.map((item) => item.low));
-          const coordinateX = newData.map((_, index) => {
-            return (
-              index * (klineConfig.candleMargin + klineConfig.candleWidth) +
-              klineConfig.candleWidth / 2
-            );
-          });
+  // 定义获取K线数据的函数
+  const fetchKlineData = async () => {
+    if (code && limit > 0) {
+      const response = await getKlineDataApi(code, period, timestamp, limit);
+      if (response && response.data) {
+        const newData = response.data.map((item) => {
+          item.date = formatDate(item.date, 'YYYY-MM-DD HH:mm');
+          return item;
+        });
+        setData(newData);
+        setSelectIndex(newData.length - 1);
+        const maxPrice = Math.max(...newData.map((item) => item.high));
+        const minPrice = Math.min(...newData.map((item) => item.low));
+        const coordinateX = newData.map((_, index) => {
+          return (
+            index * (klineConfig.candleMargin + klineConfig.candleWidth) +
+            klineConfig.candleWidth / 2
+          );
+        });
 
-          setMaxPrice(maxPrice);
-          setMinPrice(minPrice);
-          setCoordinateX(coordinateX);
-        }
+        setMaxPrice(maxPrice);
+        setMinPrice(minPrice);
+        setCoordinateX(coordinateX);
       }
-    };
-
-    // 初始加载一次数据
-    fetchKlineData();
-
-    // 设置定时器，每1分钟（60000毫秒）执行一次
-    // 如果传入时期，则不启动轮询
-    if (isInStockTradingTime() && !onlyShow) {
-      intervalId = setInterval(fetchKlineData, 60000);
     }
-
-    // 组件卸载时清除定时器，避免内存泄漏
-    return () => clearInterval(intervalId);
+  };
+  useEffect(() => {
+    fetchKlineData();
   }, [code, period, onlyShow, timestamp, limit]);
+  useInterval(fetchKlineData, 1000);
   // 3. 缓存mapToSvg计算结果，依赖变化时再更新
   const mapToSvg = useMemo(
     () => mapKlineToSvg(candleHeight, minPrice, maxPrice),
@@ -119,8 +105,6 @@ export default function StockKlineChartMain({
       </div>
     );
   }
-
-  console.log(candleHeight, 'candleHeight');
 
   return (
     <div style={{ width: width + 'px' }}>

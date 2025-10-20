@@ -90,6 +90,9 @@ export function throttle<F extends (...args: Parameters<F>) => ReturnType<F>>(
 export const addStockCodePrefix = (code: string): string => {
   // 去除可能的空格
   const cleanCode = code.trim();
+  if (code.length !== 6) {
+    return code;
+  }
 
   // 验证代码是否为纯数字
   if (!/^\d+$/.test(cleanCode)) {

@@ -16,6 +16,7 @@ pub enum StockError {
 }
 pub mod market_analysis_structs;
 pub mod selection_structs;
+pub mod self_reflect_structs;
 pub mod stock_lines_structs;
 pub mod stock_review_structs;
 pub mod stock_structs;

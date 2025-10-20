@@ -129,3 +129,20 @@ export type MarketAnalysisItem = {
 export type GetLastMarketAnalysisInvokeReturn = Promise<
   ResponseBaseType<MarketAnalysisItem[]>
 >;
+
+export interface SelfReflectItem {
+  id: number; // 唯一标识符
+  code: string; // 股票名称
+  title: string;
+  date: string; // 股票日期
+  description: string; // 描述
+}
+export type SelfReflectListItem = Pick<SelfReflectItem, 'id' | 'title'>;
+
+export type GetSelfReflectInvokeReturn = Promise<
+  ResponseBaseType<SelfReflectListItem[]>
+>;
+
+export type GetSingleSelfReflectInvokeReturn = Promise<
+  ResponseBaseType<SelfReflectItem>
+>;

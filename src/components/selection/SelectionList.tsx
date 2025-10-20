@@ -6,11 +6,11 @@ import {
 import type { SelectionItem, SelectionDetailsType } from '@/types/response';
 import { useSelectionStore } from '@/stores/userStore';
 import { useEffect, useState, type MouseEvent } from 'react';
-import { isInStockTradingTime } from '@/utils/common';
 import { useNavigate } from 'react-router-dom';
 import { SwapOutlined } from '@ant-design/icons';
 import { Modal, InputNumber, type InputNumberProps } from 'antd';
 import { useWindowSizeStore } from '@/stores/userStore';
+import useInterval from '@/hooks/useInterval';
 export default function App({ code }: { code: string }) {
   // 订阅刷新标识，当它变化时会触发组件更新
   const refreshFlag = useSelectionStore((state) => state.refreshFlag);
@@ -41,42 +41,25 @@ export default function App({ code }: { code: string }) {
   useEffect(() => {
     if (refreshFlag > 0) initData();
   }, [refreshFlag]);
-  useEffect(() => {
-    // 存储定时器ID，用于清理
-    let intervalId: NodeJS.Timeout;
-
-    // 定义请求数据的函数
-    const fetchData = async () => {
-      if (symbols) {
-        try {
-          const response = await getSelectionDetails(symbols);
-          if (response && response.data) {
-            setDynamicData(response.data);
-          }
-        } catch (error) {
-          console.error('获取股票详情失败:', error);
-          // 可根据需求添加错误处理，如重试机制
+  const fetchData = async () => {
+    if (symbols) {
+      try {
+        const response = await getSelectionDetails(symbols);
+        if (response && response.data) {
+          setDynamicData(response.data);
         }
-      } else {
-        setDynamicData([]);
+      } catch (error) {
+        console.error('获取股票详情失败:', error);
+        // 可根据需求添加错误处理，如重试机制
       }
-    };
-
-    // 立即执行一次请求
-    fetchData();
-
-    // 设置轮询：每隔5秒请求一次（时间可根据需求调整）
-    if (symbols && isInStockTradingTime()) {
-      intervalId = setInterval(fetchData, 1000);
+    } else {
+      setDynamicData([]);
     }
-
-    // 清理函数：组件卸载或code变化时清除定时器
-    return () => {
-      if (intervalId) {
-        clearInterval(intervalId);
-      }
-    };
+  };
+  useEffect(() => {
+    fetchData();
   }, [symbols]);
+  useInterval(fetchData, 1000);
   const scanDetails = (code: string) => {
     navigate('/kline/' + code);
   };

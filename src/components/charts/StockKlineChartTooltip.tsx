@@ -30,7 +30,7 @@ export default function StockKlineChartTooltip({
         value: `${item.percent}%`,
       },
       { label: '换手率', value: `${item.turnoverrate}%` },
-      { label: '横坐标', value: coordinateX[index] },
+      // { label: '横坐标', value: coordinateX[index] },
     ];
     return (
       <g>

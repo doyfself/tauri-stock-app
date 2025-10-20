@@ -15,6 +15,10 @@ const navList = [
     url: '/sr/want',
   },
   {
+    title: '操作反省',
+    url: '/reflect',
+  },
+  {
     title: '大盘分析',
     url: '/market',
   },

@@ -53,6 +53,10 @@ const klineConfig = {
       value: '30m',
     },
     {
+      label: '15m',
+      value: '15m',
+    },
+    {
       label: '5m',
       value: '5m',
     },

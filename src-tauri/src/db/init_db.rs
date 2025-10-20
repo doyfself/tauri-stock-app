@@ -70,6 +70,24 @@ pub fn init_stock_review_database(app: &AppHandle) -> Result<Connection, String>
     Ok(conn)
 }
 
+pub fn init_self_reflect_database(app: &AppHandle) -> Result<Connection, String> {
+    // 1. 调用通用初始化函数，获取数据库连接（确保 my_selection.db 文件路径正确、目录存在）
+    let conn = init_database(app, "self_reflect")?;
+
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS self_reflect (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,  -- 唯一自增ID（删除用）
+            title TEXT NOT NULL,          
+            code TEXT NOT NULL,           
+            date TEXT NOT NULL,           
+            description TEXT              
+        )",
+        [], // 无参数，仅创建表结构
+    )
+    .map_err(|e| format!("无法创建 self_reflect 表: {}", e))?;
+    Ok(conn)
+}
+
 pub fn init_market_analysis_database(app: &AppHandle) -> Result<Connection, String> {
     let conn = init_database(app, "market_analysis")?;
     conn.execute(
