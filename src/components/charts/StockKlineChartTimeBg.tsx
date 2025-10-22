@@ -1,51 +1,49 @@
-import React, { Fragment } from 'react';
-import { formatNumber, getStockPriceRangeByCode } from './util';
-
-// 分时图背景组件Props
+import React, { Fragment, useMemo } from 'react';
 interface StockKlineChartTimeBgProps {
   width: number;
   height: number;
-  code: string;
+  yMax: number;
+  yMin: number;
 }
 
-/**
- * 分时图背景网格组件（从9:30开始，不包含集合竞价）
- * - 时间点：9:30/10:00/10:30/11:00/11:30/13:30/14:00/14:30/15:00
- * - 每个时段均占1格宽度
- * - 不显示9:15-9:30的任何元素
- */
 const StockKlineChartTimeBg: React.FC<StockKlineChartTimeBgProps> = ({
   width,
   height,
-  code,
+  yMax,
+  yMin,
 }) => {
-  // 1. 基础配置
-  const priceRange = getStockPriceRangeByCode(code);
-  const maxPercent = priceRange;
-  const minPercent = -priceRange;
-  const yLineTotal = maxPercent - minPercent + 1;
-  const yLineStepHeight = (height - 45) / (maxPercent - minPercent);
-
-  const leftPadding = 30; // 左侧留白
-  const rightPadding = 50; // 右侧留白
+  const leftPadding = 30;
+  const rightPadding = 50;
+  const topPadding = 10;
+  const bottomReserve = 45;
   const validWidth = width - leftPadding - rightPadding;
+  const validHeight = height - topPadding - bottomReserve;
 
-  // 2. 核心规则：定义时间点与对应“格数”（从9:30开始，每格1）
+  // Y轴网格：1%整数间隔（背景参考线）
+  const yLines = useMemo(() => {
+    const lines: number[] = [];
+    for (let p = yMax; p >= yMin; p -= 1) {
+      lines.push(p);
+    }
+    return lines;
+  }, [yMax, yMin]);
+
+  const yLineStepHeight = validHeight / (yLines.length - 1 || 1);
+
+  // X轴时间配置
   const timePoints = [
-    { label: '9:30', gridCount: 0 }, // 9:30作为起点，0格
-    { label: '10:00', gridCount: 1 }, // 9:30-10:00，加1格
-    { label: '10:30', gridCount: 2 }, // 10:00-10:30，加1格
-    { label: '11:00', gridCount: 3 }, // 10:30-11:00，加1格
-    { label: '11:30', gridCount: 4 }, // 11:00-11:30，加1格
-    { label: '13:30', gridCount: 5 }, // 11:30-13:30，加1格
-    { label: '14:00', gridCount: 6 }, // 13:30-14:00，加1格
-    { label: '14:30', gridCount: 7 }, // 14:00-14:30，加1格
-    { label: '15:00', gridCount: 8 }, // 14:30-15:00，加1格
+    { label: '9:30', gridCount: 0 },
+    { label: '10:00', gridCount: 1 },
+    { label: '10:30', gridCount: 2 },
+    { label: '11:00', gridCount: 3 },
+    { label: '11:30', gridCount: 4 },
+    { label: '13:30', gridCount: 5 },
+    { label: '14:00', gridCount: 6 },
+    { label: '14:30', gridCount: 7 },
+    { label: '15:00', gridCount: 8 },
   ];
-  const totalGridCount = 8; // 总格数（从0到8，共8格）
+  const totalGridCount = 8;
   const gridWidth = validWidth / totalGridCount;
-
-  // 3. 计算每个时间点的X坐标
   const timePositions = timePoints.map((point) => ({
     label: point.label,
     x: leftPadding + point.gridCount * gridWidth,
@@ -53,19 +51,13 @@ const StockKlineChartTimeBg: React.FC<StockKlineChartTimeBgProps> = ({
 
   return (
     <g>
-      {/* 1. 整体背景 */}
       <rect x="0" y="0" width={width} height={height} fill="#191B1F" />
 
-      {/* 2. Y轴网格线 + 标签 */}
-      {Array.from({ length: yLineTotal }).map((_, i) => {
-        const currentPercent = maxPercent - i;
-        const y = 10 + i * yLineStepHeight;
+      {/* Y轴网格线（整数百分比参考线） */}
+      {yLines.map((percent, i) => {
+        const y = topPadding + i * yLineStepHeight;
         const labelX = width - rightPadding + 5;
-
-        const isZeroLine = currentPercent === 0;
-        const lineStroke = isZeroLine ? '#888' : '#363C47';
-        const lineStrokeWidth = isZeroLine ? 1 : 0.3;
-        const showLabel = currentPercent % 2 === 0;
+        const isZeroLine = percent === 0;
 
         return (
           <Fragment key={`y-grid-${i}`}>
@@ -74,33 +66,31 @@ const StockKlineChartTimeBg: React.FC<StockKlineChartTimeBgProps> = ({
               y1={y}
               x2={width - rightPadding}
               y2={y}
-              stroke={lineStroke}
-              strokeWidth={lineStrokeWidth}
+              stroke={isZeroLine ? '#888' : '#363C47'}
+              strokeWidth={isZeroLine ? 1.2 : 0.3}
             />
-            {showLabel && (
-              <text
-                x={labelX}
-                y={y}
-                textAnchor="start"
-                dominantBaseline="middle"
-                fontSize={12}
-                fill={isZeroLine ? '#888' : '#666'}
-              >
-                {formatNumber(currentPercent)}%
-              </text>
-            )}
+            <text
+              x={labelX}
+              y={y}
+              textAnchor="start"
+              dominantBaseline="middle"
+              fontSize={12}
+              fill={isZeroLine ? '#fff' : '#666'}
+            >
+              {percent === 0 ? '0%' : `${percent}%`}
+            </text>
           </Fragment>
         );
       })}
 
-      {/* 3. X轴网格线 + 时间标签（从9:30开始） */}
+      {/* X轴网格线 + 时间标签 */}
       {timePositions.map((pos, i) => (
         <Fragment key={`x-grid-${i}`}>
           <line
             x1={pos.x}
-            y1={10}
+            y1={topPadding}
             x2={pos.x}
-            y2={height - 45}
+            y2={height - bottomReserve}
             stroke="#363C47"
             strokeWidth={0.5}
           />
@@ -110,7 +100,7 @@ const StockKlineChartTimeBg: React.FC<StockKlineChartTimeBgProps> = ({
             textAnchor="middle"
             dominantBaseline="hanging"
             fontSize={12}
-            fill="#666" // 所有标签颜色一致
+            fill="#666"
           >
             {pos.label}
           </text>
