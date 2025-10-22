@@ -17,8 +17,8 @@ pub fn add_stock_line(app: &AppHandle, req: &AddLineReq) -> Result<i32, StockErr
     let mut stmt = conn
         .prepare(
             "INSERT INTO stock_lines 
-         (code, period, x1, y1, x2, y2, width, height)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)
+         (code, period, y, height)
+         VALUES (?1, ?2, ?3, ?4)
          RETURNING id", // 直接返回新增的自增ID
         )
         .map_err(|e| StockError::DbError(e))?;
@@ -28,11 +28,7 @@ pub fn add_stock_line(app: &AppHandle, req: &AddLineReq) -> Result<i32, StockErr
             params![
                 req.code.to_uppercase(), // 股票代码统一大写
                 req.period,
-                req.x1,
-                req.y1,
-                req.x2,
-                req.y2,
-                req.width,
+                req.y,
                 req.height
             ],
             |row| row.get(0),
@@ -54,7 +50,7 @@ pub fn query_stock_lines(
     let mut stmt = conn
         .prepare(
             "SELECT 
-            id, code, period, x1, y1, x2, y2, width, height
+            id, code, period, y, height
          FROM stock_lines 
          WHERE code = ?1 AND period = ?2
          ORDER BY id ASC", // 按添加顺序返回
@@ -67,12 +63,8 @@ pub fn query_stock_lines(
                 id: row.get(0)?,
                 code: row.get(1)?,
                 period: row.get(2)?,
-                x1: row.get(3)?,
-                y1: row.get(4)?,
-                x2: row.get(5)?,
-                y2: row.get(6)?,
-                width: row.get(7)?,
-                height: row.get(8)?,
+                y: row.get(3)?,
+                height: row.get(4)?,
             })
         })
         .map_err(|e| StockError::DbError(e))?

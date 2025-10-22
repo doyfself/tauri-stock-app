@@ -23,7 +23,7 @@ const navList = [
     url: '/market',
   },
 ];
-const includesArr = ['kline', 'sr/position', 'sr/want', 'market'];
+const includesArr = ['kline', 'sr/position', 'sr/want', '/reflect', 'market'];
 export default function LeftMenu() {
   const path = useLocation().pathname;
   const navigate = useNavigate();
@@ -38,6 +38,7 @@ export default function LeftMenu() {
       {navList.map((nav, index) => {
         return (
           <div
+            key={nav.title}
             className="text-[#707B8F] cursor-pointer w-[40px] h-[60px] flex flex-wrap items-center hover:text-[#4294F7]"
             style={{
               color: index === navIndex ? '#4294F7' : '#707B8F',

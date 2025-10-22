@@ -62,7 +62,7 @@ export default function MarketAnalysis() {
   };
   return (
     <div className="flex h-full gap-[20px] overflow-hidden">
-      <div className="flex flex-col gap-[10px] h-full overflow-auto">
+      <div className="flex flex-col gap-[10px] h-full overflow-auto shrink-0">
         {marketsCodes.map((item) => {
           return (
             <div className="flex gap-20" key={`market-analysis-${item.code}`}>

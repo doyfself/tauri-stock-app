@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { getMinuteDataByCode } from '@/apis/api';
 import type { StockMinuteItem } from '@/types/response';
 import StockKlineChartTimeBg from './StockKlineChartTimeBg';
@@ -26,7 +26,6 @@ const StockKlineChartTimeLine = ({
   code,
 }: StockMinuteChartProps) => {
   const [minuteData, setMinuteData] = useState<StockMinuteItem[]>([]);
-  const totalExpectedData = 240; // 全天分时数据总数（9:30-11:30 120条 + 13:30-15:00 120条）
 
   // 数据请求：首次加载+定时刷新
   const fetchMinuteData = async () => {

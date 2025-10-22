@@ -101,69 +101,82 @@ export function calculateMA(data: KlineDataType[], period: number): number[] {
   return result;
 }
 
-interface LinePoint {
-  x: number;
-  y: number;
-}
+/**
+ * 将实际价格转换为SVG水平贯穿线的起点和终点坐标
+ * @param price - 实际价格
+ * @param svgWidth - SVG的总宽度
+ * @param svgHeight - SVG的总高度
+ * @param maxPrice - K线图最高价
+ * @param minPrice - K线图最低价
+ * @returns 水平线的起点和终点坐标（{ start: {x, y}, end: {x, y} }）
+ */
+export const priceToHorizontalLine = (
+  price: number,
+  svgWidth: number,
+  svgHeight: number,
+  maxPrice: number,
+  minPrice: number,
+): {
+  start: { x: number; y: number };
+  end: { x: number; y: number };
+} => {
+  // 计算有效绘图区域高度（扣除上下间距）
+  const validHeight = svgHeight - 2 * klineConfig.padding;
+  if (validHeight <= 0) {
+    // 无效高度时返回默认中线
+    const defaultY = svgHeight / 2;
+    return {
+      start: { x: 0, y: defaultY },
+      end: { x: svgWidth, y: defaultY },
+    };
+  }
 
-// 计算贯穿线的起点和终点（确保线条穿过整个SVG）
-export const getLinePoints = (
-  x1: number,
-  y1: number,
-  x2: number,
-  y2: number,
-  width: number,
+  const priceRange = maxPrice - minPrice;
+  // 价格超出范围时取边界值
+  const clampedPrice = Math.max(minPrice, Math.min(maxPrice, price));
+  // 计算有效区域内的相对y坐标（处理价格无波动的特殊情况）
+  const relativeY =
+    priceRange === 0
+      ? validHeight / 2 // 价格无波动时居中显示
+      : (1 - (clampedPrice - minPrice) / priceRange) * validHeight;
+
+  // 最终SVG的y坐标（加上顶部间距）
+  const lineY = relativeY + klineConfig.padding;
+
+  // 返回水平贯穿线的起点（左边界）和终点（右边界）
+  return {
+    start: { x: 0, y: lineY },
+    end: { x: svgWidth, y: lineY },
+  };
+};
+
+/**
+ * 将SVG的y坐标转换为实际价格
+ * @param y - SVG中的y坐标（像素值）
+ * @param height - SVG的总高度
+ * @param maxPrice - K线图最高价
+ * @param minPrice - K线图最低价
+ * @returns 转换后的实际价格（保留2位小数）
+ */
+export const yToPrice = (
+  y: number,
   height: number,
-): { start: LinePoint; end: LinePoint } => {
-  // 计算线条斜率和截距（y = kx + b）
-  const dx = x2 - x1;
-  const dy = y2 - y1;
+  maxPrice: number,
+  minPrice: number,
+): number => {
+  const validHeight = height - 2 * klineConfig.padding;
+  if (validHeight <= 0) return 0;
 
-  // 特殊情况：垂直线（x坐标不变）
-  if (dx === 0) {
-    return {
-      start: { x: x1, y: 0 }, // 顶部边界
-      end: { x: x1, y: height }, // 底部边界
-    };
-  }
+  const relativeY = y - klineConfig.padding;
+  const clampedY = Math.max(0, Math.min(validHeight, relativeY));
+  const priceRange = maxPrice - minPrice;
 
-  // 特殊情况：水平线（y坐标不变）
-  if (dy === 0) {
-    return {
-      start: { x: 0, y: y1 }, // 左侧边界
-      end: { x: width, y: y1 }, // 右侧边界
-    };
-  }
+  const price =
+    priceRange === 0
+      ? maxPrice
+      : maxPrice - (clampedY / validHeight) * priceRange;
 
-  // 一般情况：计算线条与SVG边界的交点
-  const k = dy / dx; // 斜率
-  const b = y1 - k * x1; // 截距
-
-  // 计算与左边界（x=0）的交点
-  const leftY = k * 0 + b;
-  // 计算与右边界（x=width）的交点
-  const rightY = k * width + b;
-  // 计算与上边界（y=0）的交点
-  const topX = (0 - b) / k;
-  // 计算与下边界（y=height）的交点
-  const bottomX = (height - b) / k;
-
-  // 筛选在SVG范围内的交点，确定贯穿线的两个端点
-  const intersections: LinePoint[] = [];
-  if (leftY >= 0 && leftY <= height) intersections.push({ x: 0, y: leftY });
-  if (rightY >= 0 && rightY <= height)
-    intersections.push({ x: width, y: rightY });
-  if (topX >= 0 && topX <= width) intersections.push({ x: topX, y: 0 });
-  if (bottomX >= 0 && bottomX <= width)
-    intersections.push({ x: bottomX, y: height });
-
-  // 取距离最远的两个交点（确保贯穿整个SVG）
-  if (intersections.length >= 2) {
-    return { start: intersections[0], end: intersections[1] };
-  }
-
-  //  fallback：默认取对角线（理论上不会触发）
-  return { start: { x: 0, y: 0 }, end: { x: width, y: height } };
+  return Math.round(price * 100) / 100;
 };
 
 /**

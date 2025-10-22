@@ -27,7 +27,6 @@ export default function App({ code }: { code: string }) {
     const res = await getAllSelectionsApi();
     if (res && res.data) {
       setBaseData(res.data);
-      console.log(res.data, '自选列表数据');
       setSymbols(res.data.map((item) => item.code).join(','));
     }
   };

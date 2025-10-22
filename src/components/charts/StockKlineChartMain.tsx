@@ -6,7 +6,7 @@ import StockKlineChartDetails from './StockKlineChartDetails';
 import StockKlineChartTooltip from './StockKlineChartTooltip';
 import StockKlineChartLine from './StockKlineChartLine';
 import StockKlineChartDrawLine from './StockKlineChartDrawLine';
-import { formatDate, isInStockTradingTime } from '@/utils/common';
+import { formatDate } from '@/utils/common';
 import StockKlineChartTimeLine from './StockKlineChartTimeLine';
 import useInterval from '@/hooks/useInterval';
 import StockKlineChartVolume, {
@@ -15,7 +15,7 @@ import StockKlineChartVolume, {
 import StockKlineChartStick from './StockKlineChartStick';
 import { mapKlineToSvg, calculateMA } from './util';
 import klineConfig from './config';
-import { useEffect, useState, useMemo, use } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { getKlineDataApi } from '@/apis/api';
 import type { KlineDataResponse } from '@/types/response';
 export default function StockKlineChartMain({
@@ -33,7 +33,7 @@ export default function StockKlineChartMain({
   const [period, setPeriod] = useState<string>(
     klineConfig.periodSelectOptions[0].value,
   );
-  const [selectIndex, setSelectIndex] = useState<number>(0);
+  const [selectIndex, setSelectIndex] = useState<number>(-1);
   const [isHovered, setIsHovered] = useState(false);
   const [limit, setLimit] = useState(0);
   const candleHeight = onlyShow
@@ -60,7 +60,7 @@ export default function StockKlineChartMain({
           return item;
         });
         setData(newData);
-        setSelectIndex(newData.length - 1);
+        if (selectIndex === -1) setSelectIndex(newData.length - 1);
         const maxPrice = Math.max(...newData.map((item) => item.high));
         const minPrice = Math.min(...newData.map((item) => item.low));
         const coordinateX = newData.map((_, index) => {
@@ -150,14 +150,14 @@ export default function StockKlineChartMain({
             }}
           />
 
-          {!onlyShow && (
-            <StockKlineChartLine
-              code={code}
-              period={period}
-              width={width}
-              height={candleHeight}
-            />
-          )}
+          <StockKlineChartLine
+            code={code}
+            period={period}
+            width={width}
+            height={candleHeight}
+            maxPrice={maxPrice}
+            minPrice={minPrice}
+          />
           <StockKlineChartTooltip
             data={data}
             coordinateX={coordinateX}
@@ -172,6 +172,8 @@ export default function StockKlineChartMain({
             height={candleHeight}
             code={code}
             period={period}
+            maxPrice={maxPrice}
+            minPrice={minPrice}
           />
         )}
       </div>

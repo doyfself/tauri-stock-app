@@ -6,11 +6,7 @@ pub struct StockLine {
     pub id: i32,        // 唯一自增ID（删除用）
     pub code: String,   // 股票代码
     pub period: String, // 周期（如day/week）
-    pub x1: f64,        // 起点x坐标
-    pub y1: f64,        // 起点y坐标
-    pub x2: f64,        // 终点x坐标
-    pub y2: f64,        // 终点y坐标
-    pub width: f64,     // 画布宽度
+    pub y: f64,         // 起点x坐标
     pub height: f64,    // 画布高度
 }
 
@@ -19,11 +15,7 @@ pub struct StockLine {
 pub struct AddLineReq {
     pub code: String,   // 股票代码
     pub period: String, // 周期（如day/week）
-    pub x1: f64,        // 起点x坐标
-    pub y1: f64,        // 起点y坐标
-    pub x2: f64,        // 终点x坐标
-    pub y2: f64,        // 终点y坐标
-    pub width: f64,     // 画布宽度
+    pub y: f64,         // 起点x坐标
     pub height: f64,    // 画布高度
 }
 

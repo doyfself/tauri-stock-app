@@ -113,11 +113,7 @@ pub fn init_stock_lines_database(app: &AppHandle) -> Result<Connection, String> 
             id INTEGER PRIMARY KEY AUTOINCREMENT,  -- 唯一自增ID（删除用）
             code TEXT NOT NULL,                     -- 股票代码
             period TEXT NOT NULL,                   -- 周期（日线/周线等）
-            x1 REAL NOT NULL,                       -- 起点x坐标
-            y1 REAL NOT NULL,                       -- 起点y坐标
-            x2 REAL NOT NULL,                       -- 终点x坐标
-            y2 REAL NOT NULL,                       -- 终点y坐标
-            width REAL NOT NULL,                    -- 线条宽度
+            y REAL NOT NULL,                       
             height REAL NOT NULL                    -- 线条高度
         )",
         [], // 无参数

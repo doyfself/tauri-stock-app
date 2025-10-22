@@ -91,12 +91,8 @@ export type GetSelectionDetailsInvokeReturn = Promise<
 export interface StockLineType {
   code: string; // 股票代码
   period: string; // 周期（如 "day"、"week"、"month" 等）
-  x1: number;
-  y1: number;
-  x2: number;
-  y2: number;
+  y: number;
   id: number; // 唯一标识符
-  width: number;
   height: number;
 }
 export type GetStockLinesInvokeReturn = Promise<

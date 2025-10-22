@@ -1,49 +1,54 @@
 import { getStockLineApi, deleteStockLineApi } from '@/apis/api';
-import React, { useEffect, useState, useRef } from 'react';
-import { getLinePoints } from './util';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
+import { priceToHorizontalLine } from './util';
 import { useSelectionLineStore } from '@/stores/userStore';
 import { StockLineType } from '@/types/response';
 
 interface StockKlineChartLineProps {
   code: string;
   period: string;
-  width: number; // 当前容器宽度（用于计算删除按钮位置）
+  width: number; // 当前容器宽度
   height: number; // 当前容器高度
+  maxPrice: number; // K线图最高价
+  minPrice: number; // K线图最低价
 }
-
-type LinePoint = {
-  x: number;
-  y: number;
-};
 
 export default function StockKlineChartLine({
   code,
   period,
-  width,
+  width: containerWidth,
+  height: containerHeight,
+  maxPrice,
+  minPrice,
 }: StockKlineChartLineProps) {
-  const [lineData, setLineData] = useState<StockLineType[]>();
-  const [selectedLineId, setSelectedLineId] = useState<number | null>(null); // 选中的线条id
-  const svgRef = useRef<SVGGElement>(null); // 用于监听点击事件的g标签ref
+  const [lineData, setLineData] = useState<StockLineType[]>([]);
+  const [selectedLineId, setSelectedLineId] = useState<number | null>(null);
+  const containerRef = useRef<SVGGElement>(null);
+  // 从store获取状态和方法
+  const refreshFlag = useSelectionLineStore((state) => state.refreshFlag);
   const triggerRefresh = useSelectionLineStore(
     (state) => state.triggerSelectionRefresh,
   );
-  // 订阅刷新标识，当它变化时会触发组件更新
-  const refreshFlag = useSelectionLineStore((state) => state.refreshFlag);
-  // 加载画线数据
+
+  // 加载水平线数据
   useEffect(() => {
-    const fn = async () => {
+    const fetchLineData = async () => {
       const res = await getStockLineApi(code, period);
-      setLineData(res.data);
-      setSelectedLineId(null); // 数据更新时重置选中状态
+      console.log(res, 'dddd');
+      setLineData(res.data || []);
+      setSelectedLineId(null);
     };
-    fn();
+
+    fetchLineData();
   }, [code, period, refreshFlag]);
 
   // 点击空白区域取消选中
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      // 若点击的不是g标签内部元素，取消选中
-      if (svgRef.current && !svgRef.current.contains(e.target as Node)) {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(e.target as Node)
+      ) {
         setSelectedLineId(null);
       }
     };
@@ -52,55 +57,56 @@ export default function StockKlineChartLine({
     return () => document.removeEventListener('click', handleClickOutside);
   }, []);
 
-  // 计算删除按钮的位置（线条右上方）
-  const getDeleteBtnPosition = (start: LinePoint, end: LinePoint) => {
-    // 取线条中点的右上方作为按钮位置（避免超出容器）
-    const midX = (start.x + end.x) / 2;
-    const midY = (start.y + end.y) / 2;
+  // 计算删除按钮位置（针对水平线优化）
+  const getDeleteBtnPosition = useCallback(
+    (y: number) => {
+      // 水平线中间偏左位置，避免右侧溢出
+      const midX = Math.min(containerWidth / 4, containerWidth - 60); // 左侧1/4处，预留按钮宽度
+      const btnY = Math.max(y - 30, 20); // 线上方30px，不超过顶部
 
-    // 确保按钮不超出容器边界
-    const btnX = Math.min(midX + 20, width - 40); // 按钮宽度约40px，预留右边距
-    const btnY = Math.max(midY - 20, 10); // 按钮高度约20px，预留上边距
-    return { x: btnX, y: btnY };
-  };
+      return { x: midX, y: btnY };
+    },
+    [containerWidth],
+  );
 
-  // 处理删除按钮点击（这里仅示例，需根据实际删除接口实现）
+  // 处理删除
   const handleDelete = async (e: React.MouseEvent, id: number) => {
-    e.stopPropagation(); // 阻止事件冒泡，避免触发空白区域点击
-    if (lineData) {
+    e.stopPropagation();
+    try {
       await deleteStockLineApi(id);
       triggerRefresh();
+      setSelectedLineId(null);
+    } catch (err) {
+      console.error('删除失败:', err);
+      alert('删除失败，请重试');
     }
-    setSelectedLineId(null);
   };
 
-  if (!lineData) return null;
+  // 线条点击切换选中状态
+  const handleLineClick = (e: React.MouseEvent, lineId: number) => {
+    e.stopPropagation();
+    setSelectedLineId(lineId);
+  };
+
+  if (lineData.length === 0) return null;
 
   return (
-    <g ref={svgRef}>
-      {/* 已完成的贯穿线 */}
-      {lineData.map((line, index) => {
-        // 计算线条在当前容器中的坐标（适配宽高）
-        const { start, end } = getLinePoints(
-          line.x1,
-          line.y1,
-          line.x2,
-          line.y2,
-          line.width,
-          line.height,
+    <g ref={containerRef}>
+      {lineData.map((line) => {
+        const { start, end } = priceToHorizontalLine(
+          line.y, // 水平线y坐标
+          containerWidth,
+          containerHeight,
+          maxPrice,
+          minPrice,
         );
-
-        // 判断当前线条是否被选中
         const isSelected = selectedLineId === line.id;
 
         return (
-          <React.Fragment key={`drawn-line-${index}`}>
-            {/* 线条元素 */}
+          <React.Fragment key={`line-${line.id}`}>
+            {/* 水平线条 */}
             <line
-              onClick={(e) => {
-                e.stopPropagation(); // 阻止事件冒泡到document
-                setSelectedLineId(line.id);
-              }}
+              onClick={(e) => handleLineClick(e, line.id)}
               x1={start.x}
               y1={start.y}
               x2={end.x}
@@ -109,15 +115,15 @@ export default function StockKlineChartLine({
               strokeWidth={isSelected ? 2.5 : 1.5}
               strokeOpacity={isSelected ? 1 : 0.8}
               cursor="pointer"
+              style={{ transition: 'all 0.2s ease' }}
             />
 
             {/* 选中时显示删除按钮 */}
             {isSelected && (
               <g onClick={(e) => e.stopPropagation()}>
-                {/* 矩形背景 */}
                 <rect
-                  x={getDeleteBtnPosition(start, end).x}
-                  y={getDeleteBtnPosition(start, end).y}
+                  x={getDeleteBtnPosition(start.y).x}
+                  y={getDeleteBtnPosition(start.y).y}
                   width={40}
                   height={20}
                   rx={3}
@@ -125,18 +131,19 @@ export default function StockKlineChartLine({
                   fill="#fff"
                   stroke="#ddd"
                   strokeWidth={1}
-                  filter="drop-shadow(0 2px 2px rgba(0,0,0,0.1))" // 阴影效果
+                  filter="drop-shadow(0 2px 3px rgba(0,0,0,0.1))"
+                  style={{ animation: 'fadeIn 0.2s forwards' }}
                 />
-                {/* 删除文本 */}
                 <text
-                  x={getDeleteBtnPosition(start, end).x + 20} // 水平居中
-                  y={getDeleteBtnPosition(start, end).y + 14} // 垂直居中（文本基线调整）
+                  x={getDeleteBtnPosition(start.y).x + 20}
+                  y={getDeleteBtnPosition(start.y).y + 14}
                   textAnchor="middle"
                   fill="#ff4d4f"
                   fontSize={12}
                   fontWeight={500}
                   onClick={(e) => handleDelete(e, line.id)}
                   cursor="pointer"
+                  style={{ animation: 'fadeIn 0.2s 0.1s forwards' }}
                 >
                   删除
                 </text>
