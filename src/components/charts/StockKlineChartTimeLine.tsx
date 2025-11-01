@@ -42,10 +42,7 @@ const StockKlineChartTimeLine = ({
     }
   };
 
-  useInterval(fetchMinuteData);
-  useEffect(() => {
-    fetchMinuteData();
-  }, [code]);
+  useInterval(fetchMinuteData, 6000);
 
   // 计算数据中的最大/最小涨跌幅（保留原始值，仅用于计算Y轴范围）
   const { maxPercentData, minPercentData } = useMemo(() => {

@@ -141,9 +141,6 @@ export default function StockKlineChartDetails({
       }
     }
   };
-  useEffect(() => {
-    fetchData();
-  }, [code]);
   useInterval(fetchData, 1000);
   const addSelection = async () => {
     const currentSelection = inSelection ? await getCurrentSelection() : null;

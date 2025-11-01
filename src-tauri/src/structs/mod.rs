@@ -14,7 +14,9 @@ pub enum StockError {
     #[error("业务错误: {0}")]
     BusinessError(String),
 }
+pub mod holdings_structs;
 pub mod market_analysis_structs;
+pub mod orders_structs;
 pub mod selection_structs;
 pub mod self_reflect_structs;
 pub mod stock_lines_structs;

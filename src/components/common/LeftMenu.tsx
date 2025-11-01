@@ -22,8 +22,19 @@ const navList = [
     title: '大盘分析',
     url: '/market',
   },
+  {
+    title: '我的持仓',
+    url: '/holding',
+  },
 ];
-const includesArr = ['kline', 'sr/position', 'sr/want', '/reflect', 'market'];
+const includesArr = [
+  '/kline',
+  'sr/position',
+  'sr/want',
+  '/reflect',
+  '/market',
+  '/holding',
+];
 export default function LeftMenu() {
   const path = useLocation().pathname;
   const navigate = useNavigate();

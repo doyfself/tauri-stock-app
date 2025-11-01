@@ -1,23 +1,19 @@
-import {
-  getAllSelectionsApi,
-  getSelectionDetails,
-  updateSelectionSortApi,
-} from '@/apis/api';
-import type { SelectionItem, SelectionDetailsType } from '@/types/response';
+import { getAllSelectionsApi, updateSelectionSortApi } from '@/apis/api';
+import type { SelectionItem } from '@/types/response';
 import { useSelectionStore } from '@/stores/userStore';
 import { useEffect, useState, type MouseEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { SwapOutlined } from '@ant-design/icons';
 import { Modal, InputNumber, type InputNumberProps } from 'antd';
 import { useWindowSizeStore } from '@/stores/userStore';
-import useInterval from '@/hooks/useInterval';
+import { useRealTimeData } from '@/hooks/useRealTimeData';
+
 export default function App({ code }: { code: string }) {
   // 订阅刷新标识，当它变化时会触发组件更新
   const refreshFlag = useSelectionStore((state) => state.refreshFlag);
   const navigate = useNavigate();
   const [baseData, setBaseData] = useState<SelectionItem[]>([]);
   const [symbols, setSymbols] = useState<string>('');
-  const [dynamicData, setDynamicData] = useState<SelectionDetailsType[]>([]);
   const [current, setCurrent] = useState(-1);
   const [target, setTarget] = useState(-1);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -40,25 +36,9 @@ export default function App({ code }: { code: string }) {
   useEffect(() => {
     if (refreshFlag > 0) initData();
   }, [refreshFlag]);
-  const fetchData = async () => {
-    if (symbols) {
-      try {
-        const response = await getSelectionDetails(symbols);
-        if (response && response.data) {
-          setDynamicData(response.data);
-        }
-      } catch (error) {
-        console.error('获取股票详情失败:', error);
-        // 可根据需求添加错误处理，如重试机制
-      }
-    } else {
-      setDynamicData([]);
-    }
-  };
-  useEffect(() => {
-    fetchData();
-  }, [symbols]);
-  useInterval(fetchData, 1000);
+  const { data: dynamicData } = useRealTimeData(symbols, {
+    enabled: symbols.length > 0,
+  });
   const scanDetails = (code: string) => {
     navigate('/kline/' + code);
   };

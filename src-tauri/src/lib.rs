@@ -43,6 +43,12 @@ pub fn run() {
             command::self_reflect_command::add_self_reflect_cmd,
             command::self_reflect_command::get_single_self_reflect_cmd,
             command::self_reflect_command::delete_self_reflect_cmd,
+            command::holdings_command::add_holding_cmd,
+            command::holdings_command::get_all_holdings_cmd,
+            command::holdings_command::update_holding_cmd,
+            command::holdings_command::delete_holding_cmd,
+            command::orders_command::get_all_orders_cmd,
+            command::orders_command::add_order_cmd,
         ])
         .plugin(tauri_plugin_opener::init())
         .run(tauri::generate_context!())

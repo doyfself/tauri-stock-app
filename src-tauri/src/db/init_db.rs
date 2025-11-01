@@ -122,3 +122,45 @@ pub fn init_stock_lines_database(app: &AppHandle) -> Result<Connection, String> 
 
     Ok(conn)
 }
+
+pub fn init_holdings_database(app: &AppHandle) -> Result<Connection, String> {
+    // 初始化数据库连接，表文件名为"holdings"
+    let conn = init_database(app, "holdings")?;
+
+    // 创建自选股表
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS holdings (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,  -- 唯一自增ID
+            code TEXT NOT NULL,                    -- 股票代码
+            name TEXT NOT NULL,                    -- 股票名称
+            cost REAL NOT NULL,                    -- 成本价
+            quantity INTEGER NOT NULL              -- 持有数量
+        )",
+        [], // 无参数
+    )
+    .map_err(|e| format!("无法创建 holdings 表: {}", e))?;
+
+    Ok(conn)
+}
+
+pub fn init_orders_database(app: &AppHandle) -> Result<Connection, String> {
+    // 初始化数据库连接，表文件名为"orders"
+    let conn = init_database(app, "orders")?;
+
+    // 创建委托表
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS orders (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,  -- 唯一自增ID
+            code TEXT NOT NULL,                    -- 股票代码
+            name TEXT NOT NULL,                    -- 股票名称
+            time TEXT NOT NULL,                    -- 委托时间
+            quantity INTEGER NOT NULL,             -- 委托数量
+            cost REAL NOT NULL,                    -- 委托价格/成本
+            action TEXT NOT NULL                   -- 操作类型：买入/卖出
+        )",
+        [], // 无参数
+    )
+    .map_err(|e| format!("无法创建 orders 表: {}", e))?;
+
+    Ok(conn)
+}

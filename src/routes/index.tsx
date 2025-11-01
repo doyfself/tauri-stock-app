@@ -7,6 +7,7 @@ import StockReviewDetails from '@/pages/StockReviewDetails';
 import MarketAnalysis from '@/pages/MarketAnalysis';
 import SelfReflect from '@/pages/SelfReflect';
 import SelfReflectDetails from '@/pages/SelfReflectDetails';
+import MyHolding from '@/pages/MyHolding';
 export const routes: RouteObject[] = [
   {
     path: '/',
@@ -36,6 +37,10 @@ export const routes: RouteObject[] = [
       {
         path: '/reflect/:id',
         element: <SelfReflectDetails />,
+      },
+      {
+        path: '/holding',
+        element: <MyHolding />,
       },
     ],
   },

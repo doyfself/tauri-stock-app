@@ -113,7 +113,7 @@ pub async fn get_kline_data(
             high: parse_num("high"),
             low: parse_num("low"),
             close: parse_num("close"),
-            volume: parse_num("volume"),
+            volume: parse_num("amount"),
             percent: parse_num("percent"),
             turnoverrate: parse_num("turnoverrate"),
         });

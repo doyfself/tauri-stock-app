@@ -142,3 +142,40 @@ export type GetSelfReflectInvokeReturn = Promise<
 export type GetSingleSelfReflectInvokeReturn = Promise<
   ResponseBaseType<SelfReflectItem>
 >;
+
+// 持仓相关类型
+export interface HoldingItem {
+  id: number; // 唯一标识符
+  code: string; // 股票代码
+  name: string; // 股票名称
+  cost: number; // 成本价
+  quantity: number; // 持有数量
+}
+
+export type GetAllHoldingsInvokeReturn = Promise<
+  ResponseBaseType<HoldingItem[]>
+>;
+
+// 委托相关类型
+export interface OrderItem {
+  id: number; // 唯一标识符
+  code: string; // 股票代码
+  name: string; // 股票名称
+  time: string; // 委托时间
+  quantity: number; // 委托数量
+  cost: number; // 委托价格/成本
+  action: string; // 操作类型：买入/卖出
+}
+
+export interface PaginatedOrders {
+  orders: OrderItem[];
+  total: number; // 总记录数
+  page: number; // 当前页码
+  page_size: number; // 每页大小
+  total_pages: number; // 总页数
+}
+
+// 委托 API 返回类型
+export type GetAllOrdersInvokeReturn = Promise<
+  ResponseBaseType<PaginatedOrders>
+>;

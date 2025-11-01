@@ -1,8 +1,9 @@
 import { getSelectionDetails } from '@/apis/api';
 import { useState, useEffect } from 'react';
 import type { SelectionDetailsType } from '@/types/response';
-import { isInStockTradingTime } from '@/utils/common';
 import { useNavigate } from 'react-router-dom';
+import useInterval from '@/hooks/useInterval';
+import { useRealTimeData } from '@/hooks/useRealTimeData';
 const marketList = [
   {
     name: '沪指',
@@ -27,33 +28,10 @@ const marketList = [
 ];
 const symbols = marketList.map((item) => item.symbol).join(',');
 export default function BottomBar() {
-  const [dynamicData, setDynamicData] = useState<SelectionDetailsType[]>([]);
   const navigate = useNavigate();
-  useEffect(() => {
-    // 存储定时器ID，用于清理
-    let intervalId: NodeJS.Timeout;
-
-    // 定义请求数据的函数
-    const fetchData = async () => {
-      const response = await getSelectionDetails(symbols);
-      setDynamicData(response.data);
-    };
-
-    // 立即执行一次请求
-    fetchData();
-
-    // 设置轮询：每隔5秒请求一次（时间可根据需求调整）
-    if (symbols && isInStockTradingTime()) {
-      intervalId = setInterval(fetchData, 1000);
-    }
-
-    // 清理函数：组件卸载或code变化时清除定时器
-    return () => {
-      if (intervalId) {
-        clearInterval(intervalId);
-      }
-    };
-  }, []);
+  const { data: dynamicData } = useRealTimeData(symbols, {
+    enabled: true,
+  });
   return (
     <div className="flex items-center text-[#fff] text-[13px] h-[25px] gap-[20px] pl-[10px] absolute left-[0] bottom-[0]">
       {dynamicData.map((item, index) => {

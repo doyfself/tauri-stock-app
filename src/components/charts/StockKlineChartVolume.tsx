@@ -1,6 +1,6 @@
 import klineConfig from './config';
 import type { StockKlineChartVolumeProps } from './types';
-import { mapKlineToSvg, formatVolume } from './util';
+import { formatVolume } from './util';
 
 export const StockKlineChartVolumeBar = ({
   index,
@@ -18,6 +18,7 @@ export const StockKlineChartVolumeBar = ({
     </div>
   );
 };
+
 export default function StockKlineChartVolume({
   data,
   coordinateX,
@@ -26,10 +27,24 @@ export default function StockKlineChartVolume({
   isHovered,
 }: StockKlineChartVolumeProps) {
   const maxVolume = Math.max(...data.map((item) => item.volume));
-  const mapToSvg = mapKlineToSvg(klineConfig.volumeHeight, 0, maxVolume);
+
+  // 计算每个成交量柱的高度和位置
+  const getVolumeBarProps = (volume: number) => {
+    if (maxVolume === 0) {
+      return { height: 0, y: klineConfig.volumeHeight };
+    }
+
+    // maxVolume 占据 90% 的高度，其他按比例计算
+    const barHeight = (volume / maxVolume) * (klineConfig.volumeHeight * 0.9);
+    const y = klineConfig.volumeHeight - barHeight;
+
+    return { height: barHeight, y };
+  };
+
   return (
     <svg width={width} height={klineConfig.volumeHeight}>
       <g>
+        {/* 背景 */}
         <rect
           x="0"
           y="0"
@@ -37,19 +52,26 @@ export default function StockKlineChartVolume({
           height={klineConfig.volumeHeight}
           fill="#191B1F"
         />
-        {data.map((item, index) => {
+
+        {/* 成交量柱 */}
+        {data.map((item, idx) => {
           const isRise = item.close >= item.open;
           const fillColor = isRise
             ? klineConfig.riseColor
             : klineConfig.fallColor;
+          const { height: barHeight, y } = getVolumeBarProps(item.volume);
+
+          // 如果高度为0，不渲染柱子
+          if (barHeight === 0) return null;
+
           return (
             <rect
-              key={'stock-kline-chart-volumn' + index}
-              x={coordinateX[index] - klineConfig.candleWidth / 2}
-              y={mapToSvg(item.volume)}
+              key={`stock-kline-chart-volume-${idx}`}
+              x={coordinateX[idx] - klineConfig.candleWidth / 2}
+              y={y}
               width={klineConfig.candleWidth}
-              height={klineConfig.volumeHeight - mapToSvg(item.volume)}
-              fill={isRise ? klineConfig.riseColor : klineConfig.fallColor}
+              height={barHeight}
+              fill={fillColor}
               stroke={fillColor}
               strokeWidth={1}
             />

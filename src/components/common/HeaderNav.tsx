@@ -1,14 +1,25 @@
-import HeaderSearch from './HeaderSearch';
 import { SettingOutlined } from '@ant-design/icons';
 import type { MenuProps } from 'antd';
 import { Dropdown, Input, Modal } from 'antd';
 import { invoke } from '@tauri-apps/api/core';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import HeaderSearch, { StockValue } from './HeaderSearch';
+
 export default function HeaderNav() {
+  const navigate = useNavigate();
+  const [selectedStock, setSelectedStock] = useState<StockValue>({
+    code: '',
+    name: '',
+  });
+  const handleStockChange = (stock: StockValue) => {
+    setSelectedStock(stock);
+    // 导航到 K 线页面
+    navigate(`/kline/${stock.code}`);
+  };
   return (
     <div className="h-[40px] bg-[#30343A] w-[100vw] flex justify-center items-center absolute">
-      <HeaderSearch />
+      <HeaderSearch value={selectedStock} onChange={handleStockChange} />
       <RightDropdown />
     </div>
   );

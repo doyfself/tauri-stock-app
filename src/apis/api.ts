@@ -172,3 +172,74 @@ export const deleteSelfReflectApi = (id: number) =>
   invoke<responseType.InvokeBooleanReturn>('delete_self_reflect_cmd', {
     req: { id },
   });
+
+/**
+ * 获取所有持仓列表
+ */
+export const getAllHoldingsApi = () =>
+  invoke<responseType.GetAllHoldingsInvokeReturn>('get_all_holdings_cmd');
+/**
+ * 添加持仓
+ */
+// 添加持仓请求参数
+export interface AddHoldingParams {
+  code: string;
+  name: string;
+  cost: number;
+  quantity: number;
+}
+
+// 更新持仓请求参数
+export interface UpdateHoldingParams {
+  id: number;
+  cost: number;
+  quantity: number;
+}
+export const addHoldingApi = (params: AddHoldingParams) =>
+  invoke<responseType.InvokeBooleanReturn>('add_holding_cmd', {
+    params,
+  });
+
+/**
+ * 更新持仓
+ */
+export const updateHoldingApi = (params: UpdateHoldingParams) =>
+  invoke<responseType.InvokeBooleanReturn>('update_holding_cmd', {
+    params,
+  });
+
+/**
+ * 删除持仓
+ */
+export const deleteHoldingApi = (id: number) =>
+  invoke<responseType.InvokeBooleanReturn>('delete_holding_cmd', { id });
+
+/**
+ * 获取所有委托列表
+ */
+export interface QueryOrdersParams {
+  current: number; // 页码，从1开始
+  pageSize: number; // 每页大小
+}
+export const getAllOrdersApi = (params: QueryOrdersParams) =>
+  invoke<responseType.GetAllOrdersInvokeReturn>('get_all_orders_cmd', {
+    params: {
+      page: params.current,
+      page_size: params.pageSize,
+    },
+  });
+
+// 添加委托请求参数
+export interface AddOrderParams {
+  code: string;
+  name: string;
+  time: string;
+  quantity: number;
+  cost: number;
+  action: string;
+}
+/**
+ * 添加委托
+ */
+export const addOrderApi = (params: AddOrderParams) =>
+  invoke<responseType.InvokeBooleanReturn>('add_order_cmd', { params });

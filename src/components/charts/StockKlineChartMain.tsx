@@ -42,17 +42,19 @@ export default function StockKlineChartMain({
       klineConfig.volumeHeight -
       klineConfig.barHeight * 2 -
       klineConfig.newsAreaHeight;
+
   useEffect(() => {
     setLimit(
       Math.floor(
         (width - klineConfig.right) /
-          (klineConfig.candleWidth + klineConfig.candleMargin * 2),
+          (klineConfig.candleWidth + klineConfig.candleMargin),
       ),
     );
   }, [width]);
   // 定义获取K线数据的函数
   const fetchKlineData = async () => {
     if (code && limit > 0) {
+      console.log(limit, 'limit');
       const response = await getKlineDataApi(code, period, timestamp, limit);
       if (response && response.data) {
         const newData = response.data.map((item) => {
@@ -76,10 +78,9 @@ export default function StockKlineChartMain({
       }
     }
   };
-  useEffect(() => {
-    fetchKlineData();
-  }, [code, period, onlyShow, timestamp, limit]);
-  useInterval(fetchKlineData, 1000);
+  useInterval(fetchKlineData, 1000, {
+    enabled: limit > 0,
+  });
   // 3. 缓存mapToSvg计算结果，依赖变化时再更新
   const mapToSvg = useMemo(
     () => mapKlineToSvg(candleHeight, minPrice, maxPrice),

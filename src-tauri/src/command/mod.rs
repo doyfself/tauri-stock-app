@@ -1,6 +1,8 @@
 pub mod app_config_command;
 pub mod common;
+pub mod holdings_command;
 pub mod market_analysis_commands;
+pub mod orders_command;
 pub mod selection_command;
 pub mod self_reflect_command;
 pub mod stock_command;
