@@ -5,6 +5,18 @@ impl From<StockError> for String {
         err.to_string()
     }
 }
+
+pub fn clear_stocks_table(conn: &mut rusqlite::Connection) -> Result<usize, StockError> {
+    let tx = conn.transaction()?;
+
+    let affected_rows = {
+        let mut stmt = tx.prepare("DELETE FROM all_stocks")?;
+        stmt.execute([])?
+    }; // 到这里 stmt 被销毁，释放对 tx 的借用
+
+    tx.commit()?;
+    Ok(affected_rows)
+}
 /// 批量插入/更新股票数据（存在则更新名称和时间，不存在则插入）
 pub fn batch_upsert_stocks(
     conn: &mut rusqlite::Connection,

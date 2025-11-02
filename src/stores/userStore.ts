@@ -39,3 +39,19 @@ export const useWindowSizeStore = create<WindowSizeStore>((set) => ({
   height: 0,
   setZise: (width: number, height: number) => set(() => ({ width, height })),
 }));
+
+interface LoadingState {
+  visible: boolean;
+  text: string;
+  showLoading: (text?: string) => void;
+  hideLoading: () => void;
+  setLoadingText: (text: string) => void;
+}
+
+export const useLoadingStore = create<LoadingState>((set) => ({
+  visible: false,
+  text: '加载中...',
+  showLoading: (text = '加载中...') => set({ visible: true, text }),
+  hideLoading: () => set({ visible: false }),
+  setLoadingText: (text: string) => set({ text }),
+}));

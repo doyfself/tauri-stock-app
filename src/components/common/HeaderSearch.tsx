@@ -34,8 +34,6 @@ const HeaderSearch = (props: HeaderSearchProps) => {
 
     if (!val) {
       setResult([]);
-      // 清空时也触发 onChange
-      onChange?.({ code: '', name: '' });
       return;
     }
 

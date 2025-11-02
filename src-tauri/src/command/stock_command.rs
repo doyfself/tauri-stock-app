@@ -18,18 +18,27 @@ pub async fn crawl_and_save_stocks(app: AppHandle) -> Result<serde_json::Value, 
         return Err("未爬取到任何股票数据".to_string());
     }
     println!("开始爬取数据");
-    // 2. 存入数据库
+
+    // 2. 获取数据库连接
     let mut conn =
         init_database(&app, "all_stocks").map_err(|e| format!("获取数据库连接失败: {}", e))?;
+
+    // 3. 先清空表数据
+    let cleared_count =
+        stock_db::clear_stocks_table(&mut conn).map_err(|e| format!("清空表数据失败: {}", e))?;
+    println!("已清空 {} 条旧数据", cleared_count);
+
+    // 4. 存入新数据
     let saved_count =
         stock_db::batch_upsert_stocks(&mut conn, &stocks).map_err(|e| e.to_string())?;
 
-    // 3. 返回结果给前端（JSON 格式，包含总条数和成功条数）
+    // 5. 返回结果给前端
     Ok(serde_json::json!({
         "success": true,
-        "message": format!("成功爬取并保存 {} 条股票数据", saved_count),
+        "message": format!("成功清空 {} 条旧数据，并保存 {} 条新股票数据", cleared_count, saved_count),
         "total_crawled": total_count,
-        "total_saved": saved_count
+        "total_saved": saved_count,
+        "total_cleared": cleared_count
     }))
 }
 

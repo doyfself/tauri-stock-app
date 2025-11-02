@@ -81,6 +81,9 @@ export default function StockKlineChartMain({
   useInterval(fetchKlineData, 1000, {
     enabled: limit > 0,
   });
+  useEffect(() => {
+    fetchKlineData();
+  }, [code, period, timestamp, limit]);
   // 3. 缓存mapToSvg计算结果，依赖变化时再更新
   const mapToSvg = useMemo(
     () => mapKlineToSvg(candleHeight, minPrice, maxPrice),

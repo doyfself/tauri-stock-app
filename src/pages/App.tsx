@@ -3,7 +3,8 @@ import LeftMenu from '@/components/common/LeftMenu';
 import HeaderNav from '@/components/common/HeaderNav';
 import BottomBar from '@/components/common/BottomBar';
 import { useRef, useEffect } from 'react';
-import { useWindowSizeStore } from '@/stores/userStore';
+import { useWindowSizeStore, useLoadingStore } from '@/stores/userStore';
+import { Spin } from 'antd';
 export default function Home() {
   // 1. 给主体容器加 ref
   const mainContainerRef = useRef<HTMLDivElement>(null);
@@ -15,6 +16,7 @@ export default function Home() {
       setZise(rect.width, rect.height);
     }
   }, [mainContainerRef]);
+  const { visible, text } = useLoadingStore();
   return (
     <div className="flex bg-[#1A1B1F] flex-col h-[100vh] relative">
       <HeaderNav />
@@ -27,7 +29,7 @@ export default function Home() {
           <Outlet />
         </div>
       </div>
-
+      <Spin spinning={visible} tip={text} fullscreen />
       <BottomBar />
     </div>
   );

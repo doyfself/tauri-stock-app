@@ -10,7 +10,7 @@ pub async fn crawl_all_stocks(app: tauri::AppHandle) -> Result<Vec<StockItem>, S
         create_xueqiu_http_client(&app).map_err(|err_str| StockError::BusinessError(err_str))?;
 
     // 2. 先请求第 1 页，获取总数据条数（count）
-    let first_page_url = "https://stock.xueqiu.com/v5/stock/screener/quote/list.json?page=1&size=90&order=desc&order_by=percent&market=CN&type=sh_sz";
+    let first_page_url = "https://xueqiu.com/service/screener/screen?category=CN&exchange=sh_sz&areacode=&indcode=&order_by=symbol&order=desc&page=1&size=90&only_count=0";
     let first_response = client.get(first_page_url).send().await?;
     println!("响应状态: {}", first_response.status());
 
@@ -37,7 +37,7 @@ pub async fn crawl_all_stocks(app: tauri::AppHandle) -> Result<Vec<StockItem>, S
     // 4. 循环爬取剩余页面（从第 2 页开始）
     for page in 2..=total_pages {
         let url = format!(
-            "https://stock.xueqiu.com/v5/stock/screener/quote/list.json?page={}&size=90&order=desc&order_by=percent&market=CN&type=sh_sz",
+            "https://xueqiu.com/service/screener/screen?category=CN&exchange=sh_sz&areacode=&indcode=&order_by=symbol&order=desc&page={}&size=90&only_count=0",
             page
         );
 
