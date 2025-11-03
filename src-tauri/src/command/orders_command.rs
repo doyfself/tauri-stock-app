@@ -1,4 +1,4 @@
-use crate::db::orders_db::{add_order, query_orders};
+use crate::db::orders_db::{add_order, delete_order, query_orders};
 use crate::structs::orders_structs::{AddOrderParams, Order, QueryOrdersParams};
 use serde_json;
 use tauri::command;
@@ -68,6 +68,35 @@ pub fn add_order_cmd(app: AppHandle, params: AddOrderParams) -> Result<serde_jso
             "success": false,
             "message": format!("添加委托失败: {}", e),
             "data": 0,
+            "count": 0
+        })),
+    }
+}
+
+/// 删除委托 Command
+#[command]
+pub fn delete_order_cmd(app: AppHandle, id: i32) -> Result<serde_json::Value, String> {
+    // 参数验证
+    if id <= 0 {
+        return Ok(serde_json::json!({
+            "success": false,
+            "message": "委托ID必须大于0",
+            "data": false,
+            "count": 0
+        }));
+    }
+
+    match delete_order(&app, id) {
+        Ok(()) => Ok(serde_json::json!({
+            "success": true,
+            "message": format!("成功删除委托，委托ID: {}", id),
+            "data": true,
+            "count": 1
+        })),
+        Err(e) => Ok(serde_json::json!({
+            "success": false,
+            "message": format!("删除委托失败: {}", e),
+            "data": false,
             "count": 0
         })),
     }

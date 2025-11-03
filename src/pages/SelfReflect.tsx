@@ -22,6 +22,7 @@ import {
   deleteSelfReflectApi,
 } from '@/apis/api';
 import type { SelfReflectItem, SelfReflectListItem } from '@/types/response';
+import HeaderSearch from '@/components/common/HeaderSearch';
 
 export default function SelfReflect() {
   const [modalOpen, setModalOpen] = useState(false);
@@ -160,7 +161,10 @@ interface SelfReflectModalProps {
 
 type FieldType = {
   title: string;
-  code: string;
+  stock: {
+    code: string;
+    name: string;
+  };
   date: Moment;
   description: string;
 };
@@ -180,14 +184,14 @@ export const SelfReflectModal = ({
       let date = values.date.format('YYYY-MM-DD') + ' 15:00:00';
       date = new Date(date).getTime().toString();
       const req = {
-        code: values.code || '',
+        code: values.stock.code || '',
         title: values.title,
         date: date,
         description: values.description,
       };
 
       if (initData) {
-        (req as any).id = initData.id;
+        Reflect.set(req, 'id', initData.id);
       }
 
       const res = await addSelfReflectApi(req);
@@ -237,7 +241,6 @@ export const SelfReflectModal = ({
         name="selfReflectForm"
         labelCol={{ span: 4 }}
         wrapperCol={{ span: 20 }}
-        initialValues={{ date: moment() }}
         onFinish={onFinish}
       >
         <Form.Item<FieldType>
@@ -248,8 +251,8 @@ export const SelfReflectModal = ({
           <Input placeholder="请输入反省标题" />
         </Form.Item>
 
-        <Form.Item<FieldType> label="股票代码" name="code">
-          <Input placeholder="选填，如：SH000001" />
+        <Form.Item<FieldType> label="股票代码" name="stock">
+          <HeaderSearch />
         </Form.Item>
 
         <Form.Item<FieldType>

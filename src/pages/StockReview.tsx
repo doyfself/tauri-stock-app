@@ -5,7 +5,6 @@ import {
   Form,
   type FormProps,
   DatePicker,
-  List,
   Popconfirm,
   message,
   Card,
@@ -29,6 +28,7 @@ import {
   deleteStockReviewApi,
 } from '@/apis/api';
 import type { StockReviewItem, StockReviewListItem } from '@/types/response';
+import HeaderSearch from '@/components/common/HeaderSearch';
 
 const { Search } = Input;
 
@@ -194,7 +194,10 @@ interface ReflectSelectionModalProps {
 
 type FieldType = {
   title: string;
-  code: string;
+  stock: {
+    code: string;
+    name: string;
+  };
   date: Moment;
   description: string;
 };
@@ -217,7 +220,7 @@ export const ReflectSelectionModal = ({
         .toString();
       const req = {
         type: type,
-        code: values.code,
+        code: values.stock.code,
         title: values.title,
         date: date,
         description: values.description,
@@ -264,14 +267,12 @@ export const ReflectSelectionModal = ({
       open={modalOpen}
       onCancel={handleCancel}
       width={600}
-      destroyOnClose
     >
       <Form
         form={form}
         name="stockReviewForm"
         labelCol={{ span: 4 }}
         wrapperCol={{ span: 20 }}
-        initialValues={{ date: moment() }}
         onFinish={onFinish}
       >
         <Form.Item<FieldType>
@@ -286,14 +287,11 @@ export const ReflectSelectionModal = ({
         </Form.Item>
 
         <Form.Item<FieldType>
-          label="股票代码"
-          name="code"
-          rules={[
-            { required: true, message: '请输入股票代码!' },
-            { pattern: /^\S+$/, message: '股票代码不能包含空格!' },
-          ]}
+          label="股票"
+          name="stock"
+          rules={[{ required: true, message: '请输入股票代码!' }]}
         >
-          <Input placeholder="如：SH000001" />
+          <HeaderSearch />
         </Form.Item>
 
         <Form.Item<FieldType>

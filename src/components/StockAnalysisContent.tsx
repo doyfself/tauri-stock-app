@@ -77,7 +77,7 @@ export default function StockAnalysisContent({
         </Card>
 
         {/* 主要内容区域 */}
-        <div className="flex justify-center">
+        <div className="flex">
           {/* K线图卡片 */}
           <Card
             className="bg-gray-800 border-gray-700"
@@ -94,7 +94,7 @@ export default function StockAnalysisContent({
 
           {/* 详细内容卡片 */}
           <Card
-            className="bg-gray-800 border-gray-700"
+            className="bg-gray-800 border-gray-700 flex-1"
             bodyStyle={{ padding: '24px' }}
           >
             <div

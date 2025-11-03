@@ -178,41 +178,38 @@ export const deleteSelfReflectApi = (id: number) =>
  */
 export const getAllHoldingsApi = () =>
   invoke<responseType.GetAllHoldingsInvokeReturn>('get_all_holdings_cmd');
+
+export const getHistoryHoldingsApi = (params: QueryOrdersParams) =>
+  invoke<responseType.GetAllHoldingsInvokeReturn>('get_history_holdings_cmd', {
+    params: {
+      page: params.current,
+      page_size: params.pageSize,
+    },
+  });
 /**
  * 添加持仓
  */
-// 添加持仓请求参数
-export interface AddHoldingParams {
-  code: string;
-  name: string;
-  cost: number;
-  quantity: number;
-}
 
 // 更新持仓请求参数
-export interface UpdateHoldingParams {
-  id: number;
-  cost: number;
-  quantity: number;
-}
-export const addHoldingApi = (params: AddHoldingParams) =>
+export const addHoldingApi = (params: responseType.AddHoldingParams) =>
   invoke<responseType.InvokeBooleanReturn>('add_holding_cmd', {
     params,
   });
 
+export const queryHoldingByCodeApi = (code: string) =>
+  invoke<responseType.GetHoldingByCodeInvokeReturn>(
+    'get_latest_holding_by_code_cmd',
+    {
+      code,
+    },
+  );
 /**
  * 更新持仓
  */
-export const updateHoldingApi = (params: UpdateHoldingParams) =>
+export const updateHoldingApi = (params: responseType.UpdateHoldingParams) =>
   invoke<responseType.InvokeBooleanReturn>('update_holding_cmd', {
     params,
   });
-
-/**
- * 删除持仓
- */
-export const deleteHoldingApi = (id: number) =>
-  invoke<responseType.InvokeBooleanReturn>('delete_holding_cmd', { id });
 
 /**
  * 获取所有委托列表
@@ -228,18 +225,11 @@ export const getAllOrdersApi = (params: QueryOrdersParams) =>
       page_size: params.pageSize,
     },
   });
-
-// 添加委托请求参数
-export interface AddOrderParams {
-  code: string;
-  name: string;
-  time: string;
-  quantity: number;
-  cost: number;
-  action: string;
-}
 /**
  * 添加委托
  */
-export const addOrderApi = (params: AddOrderParams) =>
+export const addOrderApi = (params: Omit<responseType.OrderItem, 'id'>) =>
   invoke<responseType.InvokeBooleanReturn>('add_order_cmd', { params });
+
+export const deleteOrderApi = (id: number) =>
+  invoke<responseType.InvokeBooleanReturn>('delete_order_cmd', { id });

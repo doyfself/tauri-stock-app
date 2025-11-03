@@ -19,7 +19,11 @@ export default function HeaderNav() {
   };
   return (
     <div className="h-[40px] bg-[#30343A] w-[100vw] flex justify-center items-center absolute">
-      <HeaderSearch value={selectedStock} onChange={handleStockChange} />
+      <HeaderSearch
+        value={selectedStock}
+        onChange={handleStockChange}
+        showInHeader={true}
+      />
       <RightDropdown />
     </div>
   );

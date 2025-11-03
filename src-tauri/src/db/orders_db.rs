@@ -93,3 +93,13 @@ pub fn query_orders(
         total_pages,
     })
 }
+
+/// 删除委托
+pub fn delete_order(app: &AppHandle, id: i32) -> Result<(), StockError> {
+    let conn = get_orders_db_conn(app)?;
+
+    conn.execute("DELETE FROM orders WHERE id = ?1", params![id])
+        .map_err(|e| StockError::DbError(e))?;
+
+    Ok(())
+}

@@ -144,16 +144,46 @@ export type GetSingleSelfReflectInvokeReturn = Promise<
 >;
 
 // 持仓相关类型
+// types/response.ts
+
 export interface HoldingItem {
-  id: number; // 唯一标识符
-  code: string; // 股票代码
-  name: string; // 股票名称
-  cost: number; // 成本价
-  quantity: number; // 持有数量
+  id: number;
+  code: string;
+  name: string;
+  cost: number;
+  quantity: number;
+  hold_time: string;
+  status: number; // 1-当前持仓，0-历史记录
+  sell_time?: string; // 卖出时间
+  sell_price?: number; // 卖出价格
+  profit?: number; // 盈利
+}
+
+export interface AddHoldingParams {
+  code: string;
+  name: string;
+  cost: number;
+  quantity: number;
+  hold_time: string;
+  status?: number; // 可选，默认为1
+}
+
+export interface UpdateHoldingParams {
+  id: number;
+  cost?: number;
+  quantity?: number;
+  status?: number;
+  sell_time?: string;
+  sell_price?: number;
+  profit?: number;
 }
 
 export type GetAllHoldingsInvokeReturn = Promise<
   ResponseBaseType<HoldingItem[]>
+>;
+
+export type GetHoldingByCodeInvokeReturn = Promise<
+  ResponseBaseType<HoldingItem>
 >;
 
 // 委托相关类型
@@ -167,8 +197,8 @@ export interface OrderItem {
   action: string; // 操作类型：买入/卖出
 }
 
-export interface PaginatedOrders {
-  orders: OrderItem[];
+export interface PaginatedOrders<T> {
+  orders: T[];
   total: number; // 总记录数
   page: number; // 当前页码
   page_size: number; // 每页大小
@@ -177,5 +207,5 @@ export interface PaginatedOrders {
 
 // 委托 API 返回类型
 export type GetAllOrdersInvokeReturn = Promise<
-  ResponseBaseType<PaginatedOrders>
+  ResponseBaseType<PaginatedOrders<OrderItem>>
 >;

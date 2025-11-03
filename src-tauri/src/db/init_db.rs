@@ -127,14 +127,19 @@ pub fn init_holdings_database(app: &AppHandle) -> Result<Connection, String> {
     // 初始化数据库连接，表文件名为"holdings"
     let conn = init_database(app, "holdings")?;
 
-    // 创建自选股表
+    // 创建持仓表（包含状态字段）
     conn.execute(
         "CREATE TABLE IF NOT EXISTS holdings (
             id INTEGER PRIMARY KEY AUTOINCREMENT,  -- 唯一自增ID
             code TEXT NOT NULL,                    -- 股票代码
             name TEXT NOT NULL,                    -- 股票名称
             cost REAL NOT NULL,                    -- 成本价
-            quantity INTEGER NOT NULL              -- 持有数量
+            quantity INTEGER NOT NULL,             -- 持有数量
+            hold_time TEXT NOT NULL,               -- 持仓时间（如：YYYY-MM-DD HH:MM:SS）
+            status INTEGER NOT NULL DEFAULT 1,     -- 状态：1-当前持仓，0-历史记录
+            sell_time TEXT,                        -- 卖出时间（清仓时记录）
+            sell_price REAL,                       -- 卖出价格（清仓时记录）
+            profit REAL                            -- 盈利（清仓时记录）
         )",
         [], // 无参数
     )

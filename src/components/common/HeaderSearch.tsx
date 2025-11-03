@@ -13,10 +13,11 @@ export interface HeaderSearchProps {
   value?: StockValue;
   onChange?: (value: StockValue) => void;
   id?: string;
+  showInHeader?: boolean;
 }
 
 const HeaderSearch = (props: HeaderSearchProps) => {
-  const { value, onChange, id } = props;
+  const { value, onChange, id, showInHeader = false } = props;
   const [focuing, setFocuing] = useState(false);
   const [searchWord, setSearchWord] = useState(value?.code || '');
   const [result, setResult] = useState<SearchStocksResponse[]>([]);
@@ -65,15 +66,18 @@ const HeaderSearch = (props: HeaderSearchProps) => {
 
   return (
     <div className="w-[200px] relative">
-      <Input.Search
+      <Input
         id={id}
-        placeholder="搜索"
-        variant="filled"
-        size="small"
+        placeholder="输入股票名称或代码"
         value={searchWord}
         onChange={throttleChange}
         onFocus={handleFocus}
         onBlur={handleBlur}
+        style={{
+          color: '#fff',
+        }}
+        size={showInHeader ? 'small' : 'middle'}
+        variant={showInHeader ? 'filled' : 'outlined'}
       />
       {focuing && result.length > 0 && (
         <div className="absolute w-[200px] max-h-[270px] bg-[#191B1F] border-1 border-[#47494C] rounded-[2px] z-999 overflow-y-auto">
