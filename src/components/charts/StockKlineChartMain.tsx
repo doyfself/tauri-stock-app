@@ -16,8 +16,8 @@ import StockKlineChartStick from './StockKlineChartStick';
 import { mapKlineToSvg, calculateMA } from './util';
 import klineConfig from './config';
 import { useEffect, useState, useMemo } from 'react';
-import { getKlineDataApi } from '@/apis/api';
-import type { KlineDataResponse } from '@/types/response';
+import { getKlineDataApi, getOrdersByCodeApi } from '@/apis/api';
+import type { KlineDataResponse, OrderItem } from '@/types/response';
 export default function StockKlineChartMain({
   code,
   width,
@@ -30,6 +30,7 @@ export default function StockKlineChartMain({
   const [minPrice, setMinPrice] = useState<number>(0);
   const [maData, setMaData] = useState<number[][]>([]); // 用于存储MA数据
   const [coordinateX, setCoordinateX] = useState<number[]>([]);
+  const [orders, setOrders] = useState<OrderItem[]>([]);
   const [period, setPeriod] = useState<string>(
     klineConfig.periodSelectOptions[0].value,
   );
@@ -54,7 +55,6 @@ export default function StockKlineChartMain({
   // 定义获取K线数据的函数
   const fetchKlineData = async () => {
     if (code && limit > 0) {
-      console.log(limit, 'limit');
       const response = await getKlineDataApi(code, period, timestamp, limit);
       if (response && response.data) {
         const newData = response.data.map((item) => {
@@ -84,6 +84,26 @@ export default function StockKlineChartMain({
   useEffect(() => {
     fetchKlineData();
   }, [code, period, timestamp, limit]);
+  // 获取委托数据
+  useEffect(() => {
+    if (period !== 'day') {
+      setOrders([]);
+      return;
+    }
+    const fetchOrders = async () => {
+      if (code) {
+        try {
+          const response = await getOrdersByCodeApi(code);
+          if (response && response.data) {
+            setOrders(response.data);
+          }
+        } catch (error) {
+          console.error('获取委托数据失败:', error);
+        }
+      }
+    };
+    fetchOrders();
+  }, [code, period]);
   // 3. 缓存mapToSvg计算结果，依赖变化时再更新
   const mapToSvg = useMemo(
     () => mapKlineToSvg(candleHeight, minPrice, maxPrice),
@@ -127,6 +147,7 @@ export default function StockKlineChartMain({
           />
           {data.length && (
             <StockKlineChartCandle
+              orders={orders}
               data={data}
               coordinateX={coordinateX}
               mapToSvg={mapToSvg}

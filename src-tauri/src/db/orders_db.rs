@@ -94,6 +94,38 @@ pub fn query_orders(
     })
 }
 
+/// 根据股票代码查询所有委托记录（按时间倒序，最新的在前）
+pub fn query_orders_by_code(app: &AppHandle, code: &str) -> Result<Vec<Order>, StockError> {
+    let conn = get_orders_db_conn(app)?;
+
+    // 查询指定代码的所有委托记录
+    let mut stmt = conn
+        .prepare(
+            "SELECT id, code, name, time, quantity, cost, action 
+             FROM orders 
+             WHERE code = ?1
+             ORDER BY time DESC, id DESC",
+        )
+        .map_err(|e| StockError::DbError(e))?;
+
+    let orders = stmt
+        .query_map(params![code.to_uppercase()], |row| {
+            Ok(Order {
+                id: row.get(0)?,
+                code: row.get(1)?,
+                name: row.get(2)?,
+                time: row.get(3)?,
+                quantity: row.get(4)?,
+                cost: row.get(5)?,
+                action: row.get(6)?,
+            })
+        })
+        .map_err(|e| StockError::DbError(e))?
+        .collect::<Result<Vec<Order>, _>>()
+        .map_err(|e| StockError::DbError(e))?;
+
+    Ok(orders)
+}
 /// 删除委托
 pub fn delete_order(app: &AppHandle, id: i32) -> Result<(), StockError> {
     let conn = get_orders_db_conn(app)?;

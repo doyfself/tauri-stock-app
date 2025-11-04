@@ -1,18 +1,48 @@
-import { Card, Row, Col, Statistic, Tag, Empty, Skeleton } from 'antd';
-import { RiseOutlined, FallOutlined } from '@ant-design/icons';
+import {
+  Card,
+  Row,
+  Col,
+  Statistic,
+  Tag,
+  Empty,
+  Skeleton,
+  Button,
+  Popconfirm,
+  message,
+} from 'antd';
+import { RiseOutlined, FallOutlined, DeleteOutlined } from '@ant-design/icons';
 import type { HoldingItem } from '@/types/response';
+import { deleteHoldingApi } from '@/apis/api';
 
 interface HoldingsCardProps {
   holdingList: HoldingItem[];
   dynamicData?: any[];
   loading?: boolean;
+  onDeleteSuccess?: () => void; // 删除成功后的回调
 }
 
 export default function HoldingsCard({
   holdingList,
   dynamicData,
   loading,
+  onDeleteSuccess,
 }: HoldingsCardProps) {
+  // 处理删除持仓
+  const handleDeleteHolding = async (holdingId: number, stockName: string) => {
+    try {
+      const result = await deleteHoldingApi(holdingId);
+      if (result.success) {
+        message.success(`已删除 ${stockName} 的持仓`);
+        onDeleteSuccess?.(); // 调用成功回调
+      } else {
+        message.error(`删除失败: ${result.message}`);
+      }
+    } catch (error) {
+      message.error('删除持仓失败');
+      console.error('删除持仓失败:', error);
+    }
+  };
+
   if (loading) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-[16px]">
@@ -57,16 +87,36 @@ export default function HoldingsCard({
             <Card
               key={holding.code}
               title={`${holding.name} (${holding.code})`}
-              className="mb-4"
+              className="mb-4 relative"
               extra={
-                <Tag color={isProfit ? 'red' : isLoss ? 'green' : 'default'}>
-                  {isProfit ? (
-                    <RiseOutlined />
-                  ) : isLoss ? (
-                    <FallOutlined />
-                  ) : null}
-                  {profitRate.toFixed(2)}%
-                </Tag>
+                <div className="flex items-center gap-[8px]">
+                  <Tag color={isProfit ? 'red' : isLoss ? 'green' : 'default'}>
+                    {isProfit ? (
+                      <RiseOutlined />
+                    ) : isLoss ? (
+                      <FallOutlined />
+                    ) : null}
+                    {profitRate.toFixed(2)}%
+                  </Tag>
+                  <Popconfirm
+                    title="确认删除持仓"
+                    description={`确定要删除 ${holding.name} 的持仓记录吗？`}
+                    onConfirm={() =>
+                      handleDeleteHolding(holding.id, holding.name)
+                    }
+                    okText="确定"
+                    cancelText="取消"
+                    okType="danger"
+                  >
+                    <Button
+                      type="text"
+                      danger
+                      icon={<DeleteOutlined />}
+                      size="small"
+                      className="hover:bg-[#fff2f0]"
+                    />
+                  </Popconfirm>
+                </div>
               }
             >
               <Row gutter={16}>

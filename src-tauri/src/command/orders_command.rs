@@ -1,4 +1,4 @@
-use crate::db::orders_db::{add_order, delete_order, query_orders};
+use crate::db::orders_db::{add_order, delete_order, query_orders, query_orders_by_code};
 use crate::structs::orders_structs::{AddOrderParams, Order, QueryOrdersParams};
 use serde_json;
 use tauri::command;
@@ -97,6 +97,27 @@ pub fn delete_order_cmd(app: AppHandle, id: i32) -> Result<serde_json::Value, St
             "success": false,
             "message": format!("删除委托失败: {}", e),
             "data": false,
+            "count": 0
+        })),
+    }
+}
+
+// --------------------------
+// 根据股票代码获取所有委托记录 Command
+// --------------------------
+#[command]
+pub fn get_orders_by_code_cmd(app: AppHandle, code: String) -> Result<serde_json::Value, String> {
+    match query_orders_by_code(&app, &code) {
+        Ok(orders) => Ok(serde_json::json!({
+            "success": true,
+            "message": format!("成功获取股票 {} 的 {} 条委托记录", code, orders.len()),
+            "data": orders,
+            "count": orders.len()
+        })),
+        Err(e) => Ok(serde_json::json!({
+            "success": false,
+            "message": format!("获取股票 {} 的委托记录失败: {}", code, e),
+            "data": [],
             "count": 0
         })),
     }

@@ -1,8 +1,10 @@
 use crate::db::holdings_db::{
-    add_holding, query_history_holdings, query_holdings, query_latest_holding_by_code,
-    update_holding,
+    add_holding, delete_holding, query_history_holdings, query_holdings,
+    query_latest_holding_by_code, update_holding,
 };
-use crate::structs::holdings_structs::{AddHoldingReq, QueryHistoryParams, UpdateHoldingReq};
+use crate::structs::holdings_structs::{
+    AddHoldingReq, DeleteHoldingReq, QueryHistoryParams, UpdateHoldingReq,
+};
 use serde_json;
 use tauri::command;
 use tauri::AppHandle;
@@ -130,6 +132,35 @@ pub fn get_latest_holding_by_code_cmd(
             "success": false,
             "message": format!("获取股票 {} 的持仓数据失败: {}", code, e),
             "data": null,
+            "count": 0
+        })),
+    }
+}
+
+// --------------------------
+// 7. 删除持仓 Command
+// --------------------------
+#[command]
+pub fn delete_holding_cmd(app: AppHandle, id: i32) -> Result<serde_json::Value, String> {
+    let req = DeleteHoldingReq { id };
+
+    match delete_holding(&app, &req) {
+        Ok(true) => Ok(serde_json::json!({
+            "success": true,
+            "message": format!("成功删除持仓ID「{}」", id),
+            "data": true,
+            "count": 1
+        })),
+        Ok(false) => Ok(serde_json::json!({
+            "success": false,
+            "message": format!("未找到持仓ID「{}」，删除失败", id),
+            "data": false,
+            "count": 0
+        })),
+        Err(e) => Ok(serde_json::json!({
+            "success": false,
+            "message": format!("删除持仓失败: {}", e),
+            "data": false,
             "count": 0
         })),
     }

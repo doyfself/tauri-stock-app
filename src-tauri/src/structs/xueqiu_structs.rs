@@ -91,6 +91,8 @@ pub struct StockDetail {
     pub market_capital: Option<f64>, // 市值（通常单位：亿元）
     pub volume_ratio: Option<f64>,   // 量比（当日成交量与近5日平均成交量的比值）
     pub turnover_rate: Option<f64>,  // 换手率（单位：%，当日成交量占流通股本的比例）
+
+    pub amount: Option<f64>, // 成交额（通常单位：亿元）
 }
 
 // --------------------------

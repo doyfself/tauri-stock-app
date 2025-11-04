@@ -209,3 +209,7 @@ export interface PaginatedOrders<T> {
 export type GetAllOrdersInvokeReturn = Promise<
   ResponseBaseType<PaginatedOrders<OrderItem>>
 >;
+
+export type GetOrdersByCodeInvokeReturn = Promise<
+  ResponseBaseType<OrderItem[]>
+>;

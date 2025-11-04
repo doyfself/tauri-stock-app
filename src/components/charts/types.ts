@@ -1,3 +1,4 @@
+import type { OrderItem, SingleStockDetailsType } from '@/types/response';
 export interface KlineDataType {
   date: string; // 日期格式：YYYY-MM-DD HH:mm
   open: number; // 开盘价
@@ -23,6 +24,11 @@ export interface StockKlineChartChildProps
   minPrice: number;
   coordinateX: number[]; // X轴坐标数组
   mapToSvg: (price: number) => number; // 将价格映射到SVG坐标
+}
+
+export interface StockKlineCandleProps
+  extends Pick<StockKlineChartChildProps, 'data' | 'coordinateX' | 'mapToSvg'> {
+  orders: OrderItem[]; // 当前股票的委托数据
 }
 
 export interface StockKlineChartVolumeProps

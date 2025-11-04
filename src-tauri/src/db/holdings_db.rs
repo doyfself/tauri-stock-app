@@ -1,5 +1,7 @@
 use crate::db::common::init_database;
-use crate::structs::holdings_structs::{AddHoldingReq, Holding, PagedResult, UpdateHoldingReq};
+use crate::structs::holdings_structs::{
+    AddHoldingReq, DeleteHoldingReq, Holding, PagedResult, UpdateHoldingReq,
+};
 use crate::structs::StockError;
 use rusqlite::{params, Connection};
 use tauri::AppHandle;
@@ -219,4 +221,15 @@ pub fn query_latest_holding_by_code(
         Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
         Err(e) => Err(StockError::DbError(e)),
     }
+}
+
+/// 2. 删除持仓
+pub fn delete_holding(app: &AppHandle, req: &DeleteHoldingReq) -> Result<bool, StockError> {
+    let conn = get_holdings_db_conn(app)?;
+
+    let affected_rows = conn
+        .execute("DELETE FROM holdings WHERE id = ?1", params![req.id])
+        .map_err(|e| StockError::DbError(e))?;
+
+    Ok(affected_rows > 0)
 }

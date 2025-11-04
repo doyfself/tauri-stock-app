@@ -197,6 +197,9 @@ export default function MyHolding() {
                     holdingList={holdingList}
                     dynamicData={dynamicData}
                     loading={loading}
+                    onDeleteSuccess={() => {
+                      fetchHoldings();
+                    }}
                   />
                 ),
               },

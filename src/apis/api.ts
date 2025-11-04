@@ -211,6 +211,10 @@ export const updateHoldingApi = (params: responseType.UpdateHoldingParams) =>
     params,
   });
 
+export const deleteHoldingApi = (id: number) =>
+  invoke<responseType.InvokeBooleanReturn>('delete_holding_cmd', {
+    id,
+  });
 /**
  * 获取所有委托列表
  */
@@ -224,6 +228,11 @@ export const getAllOrdersApi = (params: QueryOrdersParams) =>
       page: params.current,
       page_size: params.pageSize,
     },
+  });
+
+export const getOrdersByCodeApi = (code: string) =>
+  invoke<responseType.GetOrdersByCodeInvokeReturn>('get_orders_by_code_cmd', {
+    code,
   });
 /**
  * 添加委托
