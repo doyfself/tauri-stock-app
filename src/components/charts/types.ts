@@ -1,4 +1,4 @@
-import type { OrderItem, SingleStockDetailsType } from '@/types/response';
+import type { OrderItem } from '@/types/response';
 export interface KlineDataType {
   date: string; // 日期格式：YYYY-MM-DD HH:mm
   open: number; // 开盘价

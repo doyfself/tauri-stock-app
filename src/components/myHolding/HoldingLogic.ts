@@ -88,57 +88,6 @@ export const handleOrderWithHolding = async ({
 };
 
 /**
- * 处理删除委托逻辑，直接删除由委托生成的持仓
- */
-export const handleDeleteOrderWithHolding = async ({
-  orderId,
-  orderData,
-  onSuccess,
-  onError,
-}: DeleteOrderLogicProps): Promise<boolean> => {
-  try {
-    const { code, name, cost, quantity, action } = orderData;
-    const isBuy = action === '1';
-
-    // 1. 首先删除委托记录
-    const deleteResult = await deleteOrderApi(orderId);
-    if (!deleteResult.success) {
-      throw new Error(`删除委托记录失败: ${deleteResult.message}`);
-    }
-
-    // 2. 根据股票代码查询最近持仓
-    const holdingResult = await queryHoldingByCodeApi(code);
-
-    if (isBuy) {
-      // 反向买入操作：直接删除由该委托生成的持仓
-      await handleReverseBuyAction(
-        code,
-        name,
-        cost,
-        quantity,
-        holdingResult.data,
-      );
-    } else {
-      // 反向卖出操作：恢复被清仓的持仓
-      await handleReverseSellAction(
-        code,
-        name,
-        cost,
-        quantity,
-        holdingResult.data,
-      );
-    }
-
-    onSuccess?.(); // 执行成功回调
-    return true;
-  } catch (error) {
-    console.error('处理删除委托失败:', error);
-    onError?.(error instanceof Error ? error.message : '处理删除委托失败');
-    return false;
-  }
-};
-
-/**
  * 处理买入操作
  */
 const handleBuyAction = async (
@@ -266,88 +215,6 @@ const handleSellAction = async (
 };
 
 /**
- * 反向处理买入操作（删除买入委托时调用）
- * 直接删除由该委托生成的持仓
- */
-const handleReverseBuyAction = async (
-  code: string,
-  name: string,
-  buyPrice: number,
-  buyQuantity: number,
-  existingHolding?: HoldingItem,
-) => {
-  if (!existingHolding) {
-    throw new Error(`找不到对应的持仓记录: ${name}(${code})`);
-  }
-
-  // 直接删除持仓，而不是更新
-  const deleteResult = await deleteHoldingApi(existingHolding.id);
-  if (!deleteResult.success) {
-    throw new Error(`删除持仓失败: ${deleteResult.message}`);
-  }
-
-  console.log(
-    `删除由买入委托生成的持仓 ${name}(${code}): 数量 ${buyQuantity}，成本 ${buyPrice}`,
-  );
-};
-
-/**
- * 反向处理卖出操作（删除卖出委托时调用）
- * 恢复被清仓的持仓
- */
-const handleReverseSellAction = async (
-  code: string,
-  name: string,
-  sellPrice: number,
-  sellQuantity: number,
-  existingHolding?: HoldingItem,
-) => {
-  // 如果没有持仓记录，说明卖出操作清仓了，需要恢复持仓
-  if (!existingHolding || existingHolding.status === 0) {
-    // 重新创建持仓
-    const addParams = {
-      code: code,
-      name: name,
-      hold_time: new Date().toISOString().split('T')[0], // 使用当前日期作为持仓时间
-      cost: sellPrice, // 使用卖出价格作为近似成本
-      quantity: sellQuantity,
-      status: 1, // 当前持仓
-    };
-
-    const addResult = await addHoldingApi(addParams);
-    if (!addResult.success) {
-      throw new Error(`恢复持仓失败: ${addResult.message}`);
-    }
-
-    console.log(`恢复持仓 ${name}(${code}): 数量 ${sellQuantity}`);
-  } else {
-    // 如果是部分卖出，回退到卖出前的状态
-    const newQuantity = existingHolding.quantity + sellQuantity;
-
-    // 计算还原后的成本（近似值）
-    const currentTotalValue = existingHolding.cost * existingHolding.quantity;
-    const sellValue = sellPrice * sellQuantity;
-    const newCost = (currentTotalValue + sellValue) / newQuantity;
-
-    const updateParams = {
-      id: existingHolding.id,
-      cost: newCost,
-      quantity: newQuantity,
-      status: 1, // 确保是当前持仓
-    };
-
-    const updateResult = await updateHoldingApi(updateParams);
-    if (!updateResult.success) {
-      throw new Error(`回滚持仓失败: ${updateResult.message}`);
-    }
-
-    console.log(
-      `回滚卖出操作 ${name}(${code}): 数量 ${sellQuantity}，还原后数量 ${newQuantity}`,
-    );
-  }
-};
-
-/**
  * 计算平均成本
  */
 const calculateAverageCost = (
@@ -359,4 +226,191 @@ const calculateAverageCost = (
   const totalValue = originalCost * originalQuantity + newCost * newQuantity;
   const totalQuantity = originalQuantity + newQuantity;
   return Number((totalValue / totalQuantity).toFixed(4));
+};
+
+/**
+ * 处理删除委托逻辑，智能管理持仓的恢复和调整
+ */
+export const handleDeleteOrderWithHolding = async ({
+  orderId,
+  orderData,
+  onSuccess,
+  onError,
+}: DeleteOrderLogicProps): Promise<boolean> => {
+  try {
+    const { code, name, cost, quantity, action } = orderData;
+    const isBuy = action === '1';
+
+    // 1. 首先删除委托记录
+    const deleteResult = await deleteOrderApi(orderId);
+    if (!deleteResult.success) {
+      throw new Error(`删除委托记录失败: ${deleteResult.message}`);
+    }
+
+    // 2. 根据股票代码查询最近持仓
+    const holdingResult = await queryHoldingByCodeApi(code);
+
+    if (isBuy) {
+      // 反向买入操作：调整或删除持仓
+      await handleReverseBuyAction(
+        code,
+        name,
+        cost,
+        quantity,
+        holdingResult.data,
+      );
+    } else {
+      // 反向卖出操作：恢复被卖出的持仓
+      await handleReverseSellAction(
+        code,
+        name,
+        cost,
+        quantity,
+        holdingResult.data,
+      );
+    }
+
+    onSuccess?.(); // 执行成功回调
+    return true;
+  } catch (error) {
+    console.error('处理删除委托失败:', error);
+    onError?.(error instanceof Error ? error.message : '处理删除委托失败');
+    return false;
+  }
+};
+
+/**
+ * 反向处理买入操作（删除买入委托时调用）
+ */
+const handleReverseBuyAction = async (
+  code: string,
+  name: string,
+  buyPrice: number,
+  buyQuantity: number,
+  existingHolding?: HoldingItem,
+) => {
+  if (!existingHolding) {
+    // 如果没有持仓，说明这个买入委托没有生成持仓，不需要处理
+    console.log(`没有找到 ${name}(${code}) 的持仓记录，无需处理`);
+    return;
+  }
+
+  // 检查当前持仓是否由该委托生成
+  const isExactMatch =
+    existingHolding.quantity === buyQuantity &&
+    Math.abs(existingHolding.cost - buyPrice) < 0.001; // 考虑浮点数精度
+
+  if (isExactMatch) {
+    // 如果完全匹配，说明持仓就是由这个委托生成的，删除持仓
+    const deleteResult = await deleteHoldingApi(existingHolding.id);
+    if (!deleteResult.success) {
+      throw new Error(`删除持仓失败: ${deleteResult.message}`);
+    }
+    console.log(
+      `删除由买入委托生成的持仓 ${name}(${code}): 数量 ${buyQuantity}，成本 ${buyPrice}`,
+    );
+  } else {
+    // 如果不完全匹配，说明持仓是由多个委托生成的，需要调整持仓
+    await adjustHoldingForReverseBuy(existingHolding, buyPrice, buyQuantity);
+  }
+};
+
+/**
+ * 调整持仓（针对非完全匹配的买入委托删除）
+ */
+const adjustHoldingForReverseBuy = async (
+  holding: HoldingItem,
+  buyPrice: number,
+  buyQuantity: number,
+) => {
+  // 计算新的数量和成本
+  const newQuantity = holding.quantity - buyQuantity;
+
+  if (newQuantity <= 0) {
+    // 如果调整后数量为0或负数，删除持仓
+    const deleteResult = await deleteHoldingApi(holding.id);
+    if (!deleteResult.success) {
+      throw new Error(`删除持仓失败: ${deleteResult.message}`);
+    }
+    console.log(`调整后持仓数量为0，删除持仓 ${holding.name}(${holding.code})`);
+    return;
+  }
+
+  // 重新计算成本：从总价值中减去这个委托的价值
+  const currentTotalValue = holding.cost * holding.quantity;
+  const removedValue = buyPrice * buyQuantity;
+  const newCost = (currentTotalValue - removedValue) / newQuantity;
+
+  const updateParams = {
+    id: holding.id,
+    cost: Number(newCost.toFixed(4)),
+    quantity: newQuantity,
+    status: 1,
+  };
+
+  const updateResult = await updateHoldingApi(updateParams);
+  if (!updateResult.success) {
+    throw new Error(`调整持仓失败: ${updateResult.message}`);
+  }
+
+  console.log(
+    `调整持仓 ${holding.name}(${holding.code}): 新数量 ${newQuantity}，新成本 ${newCost.toFixed(4)}`,
+  );
+};
+
+/**
+ * 反向处理卖出操作（删除卖出委托时调用）
+ */
+const handleReverseSellAction = async (
+  code: string,
+  name: string,
+  sellPrice: number,
+  sellQuantity: number,
+  existingHolding?: HoldingItem,
+) => {
+  if (!existingHolding) {
+    // 如果没有持仓，说明卖出操作清仓了，需要恢复持仓
+    // 注意：这里我们无法知道原始成本，所以用卖出价格作为近似成本
+    const addParams = {
+      code: code,
+      name: name,
+      hold_time: new Date().toISOString().split('T')[0],
+      cost: sellPrice, // 使用卖出价格作为近似成本
+      quantity: sellQuantity,
+      status: 1,
+    };
+
+    const addResult = await addHoldingApi(addParams);
+    if (!addResult.success) {
+      throw new Error(`恢复持仓失败: ${addResult.message}`);
+    }
+
+    console.log(
+      `恢复被清仓的持仓 ${name}(${code}): 数量 ${sellQuantity}，近似成本 ${sellPrice}`,
+    );
+  } else {
+    // 如果是部分卖出，恢复卖出的数量
+    const newQuantity = existingHolding.quantity + sellQuantity;
+
+    // 重新计算成本：将卖出的股票按卖出价格"买回"
+    const currentTotalValue = existingHolding.cost * existingHolding.quantity;
+    const addedValue = sellPrice * sellQuantity;
+    const newCost = (currentTotalValue + addedValue) / newQuantity;
+
+    const updateParams = {
+      id: existingHolding.id,
+      cost: Number(newCost.toFixed(4)),
+      quantity: newQuantity,
+      status: 1,
+    };
+
+    const updateResult = await updateHoldingApi(updateParams);
+    if (!updateResult.success) {
+      throw new Error(`回滚卖出操作失败: ${updateResult.message}`);
+    }
+
+    console.log(
+      `回滚卖出操作 ${name}(${code}): 恢复数量 ${sellQuantity}，新数量 ${newQuantity}，新成本 ${newCost.toFixed(4)}`,
+    );
+  }
 };

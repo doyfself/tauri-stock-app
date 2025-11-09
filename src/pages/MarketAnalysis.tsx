@@ -11,8 +11,6 @@ import {
   message,
   Typography,
   List,
-  Row,
-  Col,
 } from 'antd';
 import {
   EditOutlined,
@@ -94,8 +92,6 @@ export default function MarketAnalysis() {
       if (res && res.data) {
         setAnalysisList(res.data);
       }
-    } catch (error) {
-      message.error('获取分析数据失败');
     } finally {
       setLoading(false);
     }
@@ -115,17 +111,13 @@ export default function MarketAnalysis() {
       return;
     }
 
-    try {
-      await addAnalysisApi(date, content, status);
-      message.success('添加分析成功');
-      setIsEditing(false);
-      setContent('');
-      setDate('');
-      setStatus('观察');
-      initData();
-    } catch (error) {
-      message.error('添加分析失败');
-    }
+    await addAnalysisApi(date, content, status);
+    message.success('添加分析成功');
+    setIsEditing(false);
+    setContent('');
+    setDate('');
+    setStatus('观察');
+    initData();
   };
 
   const handleCancel = () => {

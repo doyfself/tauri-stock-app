@@ -245,6 +245,10 @@ export const ReflectSelectionModal = ({
     if (modalOpen && initData) {
       const fields = {
         ...initData,
+        stock: {
+          code: initData.code,
+          name: '',
+        },
         date: moment(formatDate(initData.date, 'YYYY-MM-DD')),
       };
       form.setFieldsValue(fields);

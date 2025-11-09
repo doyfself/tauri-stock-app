@@ -1,5 +1,5 @@
 import { Input } from 'antd';
-import { useState, type ChangeEvent, useEffect } from 'react';
+import { useState, type ChangeEvent, useEffect, useRef } from 'react';
 import { throttle } from '@/utils/common';
 import { queryStockByWordApi } from '@/apis/api';
 import type { SearchStocksResponse } from '@/types/response';
@@ -19,15 +19,65 @@ export interface HeaderSearchProps {
 const HeaderSearch = (props: HeaderSearchProps) => {
   const { value, onChange, id, showInHeader = false } = props;
   const [focuing, setFocuing] = useState(false);
-  const [searchWord, setSearchWord] = useState(value?.code || '');
+  const [searchWord, setSearchWord] = useState('');
   const [result, setResult] = useState<SearchStocksResponse[]>([]);
+  const prevCodeRef = useRef<string>('');
 
-  // 同步外部 value 到内部状态
+  // 当传入的 code 变化时，根据 code 查询对应的股票名称
   useEffect(() => {
-    if (value?.name !== searchWord) {
-      setSearchWord(value?.name || '');
+    const currentCode = value?.code || '';
+
+    // 如果 code 有变化且不为空，查询对应的股票信息
+    if (currentCode && currentCode !== prevCodeRef.current) {
+      prevCodeRef.current = currentCode;
+
+      // 如果已经有 name，直接显示
+      if (value?.name) {
+        setSearchWord(value.name);
+      } else {
+        // 没有 name，根据 code 查询
+        fetchStockByCode(currentCode);
+      }
+    } else if (!currentCode) {
+      // 如果 code 为空，清空搜索词
+      setSearchWord('');
+      prevCodeRef.current = '';
     }
-  }, [value?.code]);
+  }, [value?.code, value?.name]);
+
+  // 根据 code 查询股票信息
+  const fetchStockByCode = async (code: string) => {
+    const queryCode = code.slice(2, 8);
+    try {
+      // 先显示 code
+      setSearchWord(code);
+
+      const result = await queryStockByWordApi(queryCode);
+      if (result.data && result.data.length > 0) {
+        // 查找完全匹配的股票
+        const exactMatch = result.data.find((item) => item.symbol === code);
+        if (exactMatch) {
+          setSearchWord(exactMatch.name);
+
+          // 如果父组件没有提供完整的 value，可以自动补全
+          if (!value?.name) {
+            const stockValue = {
+              code: exactMatch.symbol,
+              name: exactMatch.name,
+            };
+            onChange?.(stockValue);
+          }
+        } else {
+          // 没有找到完全匹配的，保持显示 code
+          setSearchWord(code);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to fetch stock by code:', error);
+      // 查询失败时保持显示 code
+      setSearchWord(code);
+    }
+  };
 
   const throttleChange = throttle(async (e: ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
@@ -53,6 +103,7 @@ const HeaderSearch = (props: HeaderSearchProps) => {
     // 调用父组件的 onChange，传递完整的股票信息
     onChange?.(stockValue);
     setFocuing(false);
+    setResult([]);
   };
 
   const handleFocus = () => {
@@ -60,7 +111,6 @@ const HeaderSearch = (props: HeaderSearchProps) => {
   };
 
   const handleBlur = () => {
-    // 延迟隐藏下拉框，确保点击选项能触发
     setTimeout(() => setFocuing(false), 200);
   };
 

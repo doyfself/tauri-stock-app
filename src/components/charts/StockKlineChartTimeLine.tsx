@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { getMinuteDataByCode } from '@/apis/api';
 import type { StockMinuteItem } from '@/types/response';
 import StockKlineChartTimeBg from './StockKlineChartTimeBg';

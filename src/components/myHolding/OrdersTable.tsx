@@ -1,12 +1,16 @@
-import { Table, Tag, Button, Popconfirm, message, Space, Tooltip } from 'antd';
+import { Table, Tag, Button, Popconfirm, message, Tooltip } from 'antd';
 import { DeleteOutlined, ReloadOutlined } from '@ant-design/icons';
 import type { TableColumnsType, TablePaginationConfig } from 'antd';
 import type { OrderItem } from '@/types/response';
 import { handleDeleteOrderWithHolding } from './HoldingLogic';
+import type { TableProps } from 'antd';
+type TablePagination<T extends object> = NonNullable<
+  Exclude<TableProps<T>['pagination'], boolean>
+>;
 
 interface OrdersTableProps {
   orderList: OrderItem[];
-  pagination: any;
+  pagination: TablePagination<OrderItem>;
   onChange: (pagination: TablePaginationConfig) => void;
   onRefresh: () => void;
 }
@@ -17,7 +21,10 @@ export default function OrdersTable({
   onChange,
   onRefresh,
 }: OrdersTableProps) {
-  const handleDeleteOrder = async (orderId: number, orderData: any) => {
+  const handleDeleteOrder = async (
+    orderId: number,
+    orderData: Omit<OrderItem, 'id'>,
+  ) => {
     try {
       const success = await handleDeleteOrderWithHolding({
         orderId,
@@ -34,7 +41,7 @@ export default function OrdersTable({
       if (!success) {
         message.error('删除委托失败');
       }
-    } catch (error) {
+    } catch {
       message.error('删除委托失败');
     }
   };

@@ -18,48 +18,74 @@ export default function App({ code }: { code: string }) {
   const [target, setTarget] = useState(-1);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { height: windowHeight } = useWindowSizeStore();
+
+  // 定时获取实时数据
+  const { data: dynamicData, fetchData } = useRealTimeData(symbols, {
+    enabled: symbols.length > 0,
+  });
+
   const initData = async () => {
     // 获取自选列表
     const res = await getAllSelectionsApi();
     if (res && res.data) {
       setBaseData(res.data);
-      setSymbols(res.data.map((item) => item.code).join(','));
+      // 只使用自选的 symbols
+      const selectionSymbols = res.data.map((item) => item.code).join(',');
+      setSymbols(selectionSymbols);
+    } else {
+      setBaseData([]);
+      setSymbols('');
     }
   };
+
+  useEffect(() => {
+    fetchData();
+  }, [symbols, fetchData]);
+
   useEffect(() => {
     initData();
   }, []);
+
   useEffect(() => {
     const index = baseData.findIndex((item) => code.includes(item.code));
     setCurrent(index);
   }, [baseData, code]);
+
   useEffect(() => {
     if (refreshFlag > 0) initData();
   }, [refreshFlag]);
-  const { data: dynamicData } = useRealTimeData(symbols, {
-    enabled: symbols.length > 0,
-  });
+
   const scanDetails = (code: string) => {
     navigate('/kline/' + code);
   };
-  //  排序
+
+  // 排序
   const sortSelection = (e: MouseEvent, index: number) => {
     e.stopPropagation();
-    setCurrent(index + 1);
+    setCurrent(index);
     setIsModalOpen(true);
   };
+
   const handleInputChange: InputNumberProps['onChange'] = (value) => {
     if (value) {
       setTarget(value as number);
     }
   };
+
   const handleOk = async () => {
-    if (target === current) {
+    if (target === current || target < 1 || target > baseData.length) {
       return;
     }
-    const symbolArr = symbols.split(',');
-    const ele = symbolArr.splice(current - 1, 1);
-    symbolArr.splice(target - 1, 0, ele[0]);
+
+    const actualTarget = target - 1;
+
+    if (current < 0 || current >= baseData.length) {
+      return;
+    }
+
+    const symbolArr = baseData.map((item) => item.code);
+    const ele = symbolArr.splice(current, 1);
+    symbolArr.splice(actualTarget, 0, ele[0]);
     await updateSelectionSortApi(symbolArr);
     initData();
     setIsModalOpen(false);
@@ -91,6 +117,7 @@ export default function App({ code }: { code: string }) {
       document.removeEventListener('keydown', handleKeyDown, true);
     };
   }, [current, baseData, navigate]);
+
   return (
     <>
       <div
@@ -104,52 +131,62 @@ export default function App({ code }: { code: string }) {
           <span>名称</span>
           <span>涨幅/现价</span>
         </div>
-        <ul className="flex-1 overflow-auto">
-          {dynamicData &&
-            dynamicData.length &&
-            dynamicData.map((item, index) => {
-              return (
-                <li
-                  style={{
-                    background: index === current ? '#2E4365' : '#1A1B1F',
-                  }}
-                  className="flex items-center pl-[5px] pr-[5px] h-[50px] justify-between border-b border-[#24262D] text-[13px]"
-                  onClick={() => scanDetails(baseData[index].code)}
-                  key={item.code}
-                >
-                  <div className="flex">
-                    <div>
-                      {index + 1}
+
+        {/* 空状态美化 */}
+        {baseData.length === 0 ? (
+          <div className="flex-1 flex flex-col items-center justify-center text-[#666] text-[14px]">
+            <div className="mb-2">暂无自选股票</div>
+            <div className="text-[12px]">请添加股票到自选列表</div>
+          </div>
+        ) : (
+          <ul className="flex-1 overflow-auto">
+            {dynamicData &&
+              dynamicData.length > 0 &&
+              baseData.map((item, index) => {
+                const dynamicItem = dynamicData[index];
+
+                return (
+                  <li
+                    style={{
+                      background: index === current ? '#2E4365' : '#1A1B1F',
+                    }}
+                    className="flex items-center pl-[5px] pr-[5px] h-[50px] justify-between border-b border-[#24262D] text-[13px]"
+                    onClick={() => scanDetails(item.code)}
+                    key={item.code}
+                  >
+                    <div className="flex">
+                      <div>
+                        {index + 1}
+                        <div
+                          onClick={(e) => sortSelection(e, index)}
+                          className="cursor-pointer rotate-90"
+                        >
+                          <SwapOutlined />
+                        </div>
+                      </div>
                       <div
-                        onClick={(e) => sortSelection(e, index)}
-                        className="cursor-pointer rotate-90"
+                        className="ml-[5px]"
+                        style={{
+                          color: item.color || '#fff',
+                        }}
                       >
-                        <SwapOutlined />
+                        <div>{item.name}</div>
+                        <div>{item.code}</div>
                       </div>
                     </div>
                     <div
-                      className="ml-[5px]"
                       style={{
-                        color:
-                          (baseData[index] && baseData[index].color) || '#fff',
+                        color: dynamicItem?.percent >= 0 ? 'red' : 'green',
                       }}
                     >
-                      <div>{item.name}</div>
-                      <div>{item.code}</div>
+                      <div>{dynamicItem?.percent || 0}%</div>
+                      <div>{dynamicItem?.current || 0}</div>
                     </div>
-                  </div>
-                  <div
-                    style={{
-                      color: item.percent >= 0 ? 'red' : 'green',
-                    }}
-                  >
-                    <div>{item.percent}%</div>
-                    <div>{item.current}</div>
-                  </div>
-                </li>
-              );
-            })}
-        </ul>
+                  </li>
+                );
+              })}
+          </ul>
+        )}
       </div>
       <Modal
         title="排序"
@@ -164,6 +201,9 @@ export default function App({ code }: { code: string }) {
           min={1}
           onChange={handleInputChange}
         />
+        <div style={{ marginTop: 8, fontSize: 12, color: '#999' }}>
+          当前排序范围：1 - {baseData.length} (仅自选股票)
+        </div>
       </Modal>
     </>
   );

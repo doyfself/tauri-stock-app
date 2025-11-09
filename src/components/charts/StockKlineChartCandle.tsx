@@ -112,7 +112,7 @@ export default function StockKlineChartCandle({
               {/* 交易标记 - 黄色T字母 */}
               <text
                 x={x}
-                y={mapToSvg(klineData.high) - 20}
+                y={mapToSvg(klineData.high) - 35} // 从-20调整为-35，离得更远
                 textAnchor="middle"
                 dominantBaseline="middle"
                 fill="#fa8c16" // 橙色
@@ -126,7 +126,7 @@ export default function StockKlineChartCandle({
               {/* 连线到K线 */}
               <line
                 x1={x}
-                y1={mapToSvg(klineData.high) - 15}
+                y1={mapToSvg(klineData.high) - 30} // 调整连线起点
                 x2={x}
                 y2={mapToSvg(klineData.high)}
                 stroke="#fa8c16"
@@ -144,9 +144,11 @@ export default function StockKlineChartCandle({
             {dateOrders.map((order: OrderItem) => {
               const isBuy = order.action === '1';
 
-              // 垂直排列，买入在上方，卖出在下方
-              const verticalOffset = isBuy ? -25 : 5;
-              const markerY = mapToSvg(klineData.high) + verticalOffset;
+              // 增加垂直偏移量，让标记离蜡烛图更远
+              const verticalOffset = isBuy ? -40 : 10; // 买入从-25调整为-40，卖出从5调整为10
+              const markerY =
+                mapToSvg(isBuy ? klineData.high : klineData.low) +
+                verticalOffset;
 
               return (
                 <g key={`order-${order.id}`}>
@@ -158,7 +160,11 @@ export default function StockKlineChartCandle({
                     dominantBaseline="middle"
                     fill={isBuy ? '#52c41a' : '#ff4d4f'}
                     fontSize={14}
-                    style={{ userSelect: 'none' }}
+                    fontWeight="bold" // 加粗提高可读性
+                    style={{
+                      userSelect: 'none',
+                      filter: 'drop-shadow(0 0 1px white)', // 添加白色描边效果，提高对比度
+                    }}
                   >
                     {isBuy ? 'B' : 'S'}
                   </text>
@@ -166,7 +172,7 @@ export default function StockKlineChartCandle({
                   {/* 连线到K线 */}
                   <line
                     x1={x}
-                    y1={markerY + (isBuy ? 7 : -7)}
+                    y1={markerY + (isBuy ? -7 : 7)} // 调整连线起点
                     x2={x}
                     y2={
                       isBuy ? mapToSvg(klineData.high) : mapToSvg(klineData.low)

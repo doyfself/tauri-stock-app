@@ -25,7 +25,6 @@ export default function SelfReflectModal({
   modalOpen,
   setModalOpen,
   onOrderSuccess,
-  holdingList,
 }: SelfReflectModalProps) {
   const [form] = Form.useForm();
   const [submitting, setSubmitting] = useState(false);
@@ -36,14 +35,10 @@ export default function SelfReflectModal({
     try {
       const success = await handleOrderWithHolding({
         values,
-        holdingList,
         onSuccess: () => {
           form.resetFields();
           onOrderSuccess();
           setModalOpen(false);
-        },
-        onError: (error) => {
-          message.error(`委托失败: ${error}`);
         },
       });
 
@@ -52,7 +47,6 @@ export default function SelfReflectModal({
       }
     } catch (error) {
       console.error('提交失败:', error);
-      message.error('委托提交失败');
     } finally {
       setSubmitting(false);
     }

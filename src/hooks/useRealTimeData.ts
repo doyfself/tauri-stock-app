@@ -26,7 +26,6 @@ export function useRealTimeData(
 
   // 获取数据的函数
   const fetchData = useCallback(async () => {
-    console.log('Fetching real-time data for symbols:', symbols);
     if (symbols.length === 0) return;
 
     setLoading(true);
@@ -55,8 +54,8 @@ export function useRealTimeData(
       data,
       loading,
       error,
-      updateData: setData, // 手动更新数据
+      fetchData,
     }),
-    [data, loading, error],
+    [data, loading, error, fetchData],
   );
 }

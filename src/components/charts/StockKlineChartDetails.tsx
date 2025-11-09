@@ -11,10 +11,11 @@ import {
   deleteSelectionApi,
 } from '@/apis/api';
 import type { SingleStockDetailsType, SelectionItem } from '@/types/response';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { PlusOutlined, MinusOutlined } from '@ant-design/icons';
 import StockRemark from './StockRemark';
 import useInterval from '@/hooks/useInterval';
+import { marketList } from '@/config';
 
 const markColors: Record<string, string> = {
   purple: '#B833A0',
@@ -102,6 +103,7 @@ const indicatorConfig: IndicatorItemConfig[] = [
     formatValue: (value) => formatVolume(+value),
   },
 ];
+
 export default function StockKlineChartDetails({
   code,
   onlyShow,
@@ -114,20 +116,38 @@ export default function StockKlineChartDetails({
   );
   const [details, setDetails] = useState<SingleStockDetailsType | null>(null); // 用于存储股票详情数据
   const [inSelection, setInSelection] = useState(false);
+  const [currentSelection, setCurrentSelection] =
+    useState<SelectionItem | null>(null); // 新增：存储当前自选信息
+
+  // 检查当前股票是否为市场指数
+  const isMarketIndex = useMemo(() => {
+    return marketList.some((item) => item.symbol === code);
+  }, [code]);
+
   const getCurrentSelection = async () => {
     if (code) {
       const res = await getSelectionByCode(code);
       return res.data;
     }
   };
+
   useEffect(() => {
     const fn = async () => {
       if (!code) return;
       const res = await isSelectionExistsApi(code);
       setInSelection(res.data);
+
+      // 如果存在自选，获取自选信息
+      if (res.data) {
+        const selection = await getCurrentSelection();
+        setCurrentSelection(selection as SelectionItem);
+      } else {
+        setCurrentSelection(null);
+      }
     };
     fn();
   }, [code]);
+
   const fetchData = async () => {
     if (code) {
       try {
@@ -141,42 +161,47 @@ export default function StockKlineChartDetails({
       }
     }
   };
+
   useInterval(fetchData, 1000);
   useEffect(() => {
     fetchData();
   }, [code]);
+
   const addSelection = async () => {
-    const currentSelection = inSelection ? await getCurrentSelection() : null;
     if (details) {
       const allSelections = await getAllSelectionsApi();
       const count = allSelections.count || 0;
       const selection = {
         code,
         name: details.name,
-        color: currentSelection?.color || '',
-        remark: currentSelection?.remark || '',
+        color: '',
+        // 初始化时没有备注
+        remark: '',
         sort: count + 1,
       };
       const res = await addSelectionApi(selection);
       if (res.data) {
         setInSelection(true);
+        setCurrentSelection(selection);
         triggerRefresh();
       } else {
         console.error('添加自选失败');
       }
     }
   };
+
   const delSelection = async () => {
     const res = await deleteSelectionApi(code);
     if (res.data) {
       setInSelection(false);
+      setCurrentSelection(null);
       triggerRefresh();
     } else {
       console.error('删除自选失败');
     }
   };
+
   const markColorEvent = async (key: string) => {
-    const currentSelection = await getCurrentSelection();
     if (inSelection && details) {
       const selection = {
         ...currentSelection,
@@ -184,10 +209,27 @@ export default function StockKlineChartDetails({
       } as SelectionItem;
       const res = await addSelectionApi(selection);
       if (res.data) {
+        setCurrentSelection(selection); // 更新当前自选信息
         triggerRefresh();
       }
     }
   };
+
+  // 获取当前选中的颜色key
+  const getCurrentColorKey = (): string | null => {
+    if (!currentSelection?.color) return null;
+
+    // 通过颜色值反向查找对应的key
+    for (const [key, color] of Object.entries(markColors)) {
+      if (color.toLowerCase() === currentSelection.color.toLowerCase()) {
+        return key;
+      }
+    }
+    return null;
+  };
+
+  const currentColorKey = getCurrentColorKey();
+
   if (onlyShow && details) {
     return (
       <div className="text-[#fff] text-[16px]">
@@ -195,6 +237,7 @@ export default function StockKlineChartDetails({
       </div>
     );
   }
+
   // 画线
   if (details)
     return (
@@ -205,7 +248,7 @@ export default function StockKlineChartDetails({
             <span className="text-[18px] ml-[10px]">{details.symbol}</span>
           </div>
           <div
-            className="text-[18px]"
+            className="text-[20px] mb-[10px]"
             style={{
               color:
                 details.percent >= 0
@@ -216,38 +259,57 @@ export default function StockKlineChartDetails({
             {details.current}{' '}
             <span className="ml-[10px]">{details.percent}%</span>
           </div>
-          {!inSelection ? (
-            <Button
-              type="primary"
-              size="small"
-              onClick={addSelection}
-              icon={<PlusOutlined />}
-            >
-              加自选
-            </Button>
-          ) : (
-            <Button
-              danger
-              type="primary"
-              size="small"
-              icon={<MinusOutlined />}
-              onClick={delSelection}
-            >
-              删自选
-            </Button>
+          {/* 只有非市场指数才显示自选按钮 */}
+          {!isMarketIndex && (
+            <>
+              {!inSelection ? (
+                <Button
+                  type="primary"
+                  size="small"
+                  onClick={addSelection}
+                  icon={<PlusOutlined />}
+                >
+                  加自选
+                </Button>
+              ) : (
+                <Button
+                  danger
+                  type="primary"
+                  size="small"
+                  icon={<MinusOutlined />}
+                  onClick={delSelection}
+                >
+                  删自选
+                </Button>
+              )}
+            </>
           )}
-          {inSelection && (
+          {/* 只有非市场指数且在自选中才显示颜色标记 */}
+          {!isMarketIndex && inSelection && (
             <ul className="flex items-center gap-[6px] mt-[10px] mb-[10px]">
-              {Object.keys(markColors).map((key) => (
-                <li
-                  className="w-[14px] h-[14px] cursor-pointer rounded-[2px]"
-                  onClick={() => markColorEvent(key)}
-                  key={key}
-                  style={{
-                    backgroundColor: markColors[key],
-                  }}
-                ></li>
-              ))}
+              {Object.keys(markColors).map((key) => {
+                const isActive = currentColorKey === key;
+                return (
+                  <li
+                    className={`w-[14px] h-[14px] cursor-pointer rounded-[2px] relative ${
+                      isActive
+                        ? 'ring-2 ring-white ring-offset-1 ring-offset-[#23272D]'
+                        : ''
+                    }`}
+                    onClick={() => markColorEvent(key)}
+                    key={key}
+                    style={{
+                      backgroundColor: markColors[key],
+                    }}
+                    title={`标记为${key}色`}
+                  >
+                    {/* 为白色边框添加一个内边框，提高可见性 */}
+                    {markColors[key] === '#ffffff' && (
+                      <div className="absolute inset-[1px] border border-gray-400 rounded-[1px]" />
+                    )}
+                  </li>
+                );
+              })}
             </ul>
           )}
         </div>
@@ -281,7 +343,8 @@ export default function StockKlineChartDetails({
             );
           })}
         </ul>
-        {inSelection && <StockRemark code={code} />}
+        {/* 只有非市场指数且在自选中才显示备注 */}
+        {!isMarketIndex && inSelection && <StockRemark code={code} />}
       </div>
     );
 }

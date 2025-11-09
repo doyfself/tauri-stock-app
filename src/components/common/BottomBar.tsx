@@ -1,31 +1,6 @@
-import { getSelectionDetails } from '@/apis/api';
-import { useState, useEffect } from 'react';
-import type { SelectionDetailsType } from '@/types/response';
 import { useNavigate } from 'react-router-dom';
-import useInterval from '@/hooks/useInterval';
 import { useRealTimeData } from '@/hooks/useRealTimeData';
-const marketList = [
-  {
-    name: '沪指',
-    symbol: 'SH000001',
-  },
-  {
-    name: '深指',
-    symbol: 'SZ399001',
-  },
-  {
-    name: '创业板',
-    symbol: 'SZ399006',
-  },
-  {
-    name: '科创50',
-    symbol: 'SH000688',
-  },
-  {
-    name: '沪深300',
-    symbol: 'SH000300',
-  },
-];
+import { marketList } from '@/config';
 const symbols = marketList.map((item) => item.symbol).join(',');
 export default function BottomBar() {
   const navigate = useNavigate();
