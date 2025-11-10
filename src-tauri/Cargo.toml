@@ -36,3 +36,6 @@ tauri-plugin-log = "2"
 log = "0.4"
 
 chrono = "0.4.26"
+
+zip = "0.6"
+tempfile = "3.3"

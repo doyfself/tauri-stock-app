@@ -53,6 +53,7 @@ pub fn run() {
             command::orders_command::get_orders_by_code_cmd,
             command::orders_command::add_order_cmd,
             command::orders_command::delete_order_cmd,
+            command::import_command::import_database,
         ])
         .plugin(tauri_plugin_opener::init())
         .run(tauri::generate_context!())

@@ -5,6 +5,7 @@ import { invoke } from '@tauri-apps/api/core';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import HeaderSearch, { StockValue } from './HeaderSearch';
+import DatabaseImport from '@/components/ImportDbData';
 
 export default function HeaderNav() {
   const navigate = useNavigate();
@@ -31,10 +32,15 @@ export default function HeaderNav() {
 
 function RightDropdown() {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [importModalOpen, setImportModalOpen] = useState(false);
   const items: MenuProps['items'] = [
     {
       key: '1',
       label: <a onClick={() => setIsModalOpen(true)}>更新cookie</a>,
+    },
+    {
+      key: '2',
+      label: <a onClick={() => setImportModalOpen(true)}>导入数据库</a>,
     },
   ];
   return (
@@ -43,6 +49,11 @@ function RightDropdown() {
         <SettingOutlined className="text-[#fff] absolute right-[20px]" />
       </Dropdown>
       <UpdateCookie isModalOpen={isModalOpen} setIsModalOpen={setIsModalOpen} />
+      <DatabaseImport
+        open={importModalOpen}
+        onClose={() => setImportModalOpen(false)}
+        onImportSuccess={() => {}}
+      />
     </>
   );
 }

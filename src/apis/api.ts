@@ -242,3 +242,8 @@ export const addOrderApi = (params: Omit<responseType.OrderItem, 'id'>) =>
 
 export const deleteOrderApi = (id: number) =>
   invoke<responseType.InvokeBooleanReturn>('delete_order_cmd', { id });
+
+export const importDatabaseApi = (zipData: Uint8Array) =>
+  invoke<string>('import_database', {
+    zipData: Array.from(zipData),
+  });
