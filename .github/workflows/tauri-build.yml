@@ -1,4 +1,4 @@
-name: Tauri CI/CD
+name: Tauri Windows Build
 
 on:
   push:
@@ -7,12 +7,8 @@ on:
     branches: [main]
 
 jobs:
-  build:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+  build-windows:
+    runs-on: windows-latest
 
     steps:
       - name: Checkout code
@@ -25,9 +21,7 @@ jobs:
           run_install: false
 
       - name: Verify pnpm
-        run: |
-          pnpm -v
-          which pnpm || where pnpm || echo "pnpm command available"
+        run: pnpm -v
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -35,9 +29,7 @@ jobs:
           node-version: 22.16.0
           cache: 'pnpm'
 
-      # Windows 特定设置
       - name: Setup Windows build environment
-        if: matrix.os == 'windows-latest'
         uses: msys2/setup-msys2@v2
         with:
           update: true
@@ -46,41 +38,51 @@ jobs:
             mingw-w64-x86_64-toolchain
             mingw-w64-x86_64-sqlite3
 
-      - name: Install Windows dependencies
-        if: matrix.os == 'windows-latest'
+      - name: Install Windows dependencies with retry
         run: |
-          # 安装 Visual Studio 构建工具
-          choco install -y visualstudio2022buildtools
-          choco install -y visualstudio2022-workload-vctools
+          # 设置 PowerShell 执行策略和安全协议
+          Set-ExecutionPolicy Bypass -Scope Process -Force
+          [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
 
-      # Ubuntu 特定依赖
-      - name: Install system dependencies (Ubuntu)
-        if: matrix.os == 'ubuntu-latest'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            libwebkit2gtk-4.1-dev \
-            build-essential \
-            wget \
-            libssl-dev \
-            libgtk-3-dev \
-            libayatana-appindicator3-dev \
-            librsvg2-dev \
-            libsqlite3-dev  # SQLite 开发库
+          # 重试函数
+          function Install-WithRetry {
+            param($PackageName, $MaxRetries = 3)
+            $retryCount = 0
+            do {
+              $retryCount++
+              try {
+                Write-Host "Attempt $retryCount to install $PackageName"
+                choco install -y $PackageName --no-progress
+                if ($LASTEXITCODE -eq 0) {
+                  Write-Host "Successfully installed $PackageName"
+                  return $true
+                }
+              }
+              catch {
+                Write-Host "Attempt $retryCount failed: $($_.Exception.Message)"
+              }
+              if ($retryCount -lt $MaxRetries) {
+                Write-Host "Waiting 60 seconds before retry..."
+                Start-Sleep -Seconds 60
+              }
+            } while ($retryCount -lt $MaxRetries)
+            Write-Host "Failed to install $PackageName after $MaxRetries attempts"
+            return $false
+          }
 
-      # macOS 特定依赖
-      - name: Install system dependencies (macOS)
-        if: matrix.os == 'macos-latest'
-        run: |
-          brew update
-          brew install wget sqlite
+          # 尝试安装 Visual Studio 构建工具
+          $vsSuccess = Install-WithRetry "visualstudio2022buildtools"
+          $vctoolsSuccess = Install-WithRetry "visualstudio2022-workload-vctools"
 
-      # 设置 Rust 工具链
-      - name: Setup Rust
+          if (-not ($vsSuccess -and $vctoolsSuccess)) {
+            Write-Host "Chocolatey installation failed, using pre-installed Visual Studio environment"
+          }
+
+      - name: Setup Rust for Windows
         uses: dtolnay/rust-toolchain@stable
         with:
           toolchains: stable
-          targets: ${{ matrix.os == 'windows-latest' && 'x86_64-pc-windows-msvc' || matrix.os == 'macos-latest' && 'x86_64-apple-darwin' || 'x86_64-unknown-linux-gnu' }}
+          targets: x86_64-pc-windows-msvc
 
       - name: Install frontend dependencies
         run: pnpm install --frozen-lockfile
@@ -88,15 +90,15 @@ jobs:
       - name: Build frontend
         run: pnpm run build
 
-      - name: Build Tauri app
+      - name: Build Tauri app for Windows
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # 设置 SQLite 环境变量（Windows 特定）
-          SQLITE3_LIB_DIR: ${{ matrix.os == 'windows-latest' && 'C:/msys64/mingw64/lib' || '' }}
-          SQLITE3_INCLUDE_DIR: ${{ matrix.os == 'windows-latest' && 'C:/msys64/mingw64/include' || '' }}
+          SQLITE3_LIB_DIR: 'C:/msys64/mingw64/lib'
+          SQLITE3_INCLUDE_DIR: 'C:/msys64/mingw64/include'
+          RUSTFLAGS: '-C link-arg=-s'
         with:
           tagName: app-v__VERSION__
-          releaseName: 'App v__VERSION__'
-          releaseBody: 'Automatically generated Tauri release'
+          releaseName: 'Windows App v__VERSION__'
+          releaseBody: 'Automatically generated Windows Tauri release'
           releaseDraft: true
