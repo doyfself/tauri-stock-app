@@ -22,7 +22,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22.16
-          cache: 'pnpm'
+          cache: 'npm'
 
       - name: Install system dependencies (Ubuntu)
         if: matrix.os == 'ubuntu-latest'
