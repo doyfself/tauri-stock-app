@@ -21,8 +21,13 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 22.16
-          cache: 'npm'
+          node-version: 22.16.0
+          cache: 'pnpm' # 关键：指定使用pnpm进行缓存
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: latest # 确保pnpm可用
 
       - name: Install system dependencies (Ubuntu)
         if: matrix.os == 'ubuntu-latest'
@@ -30,11 +35,17 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libwebkit2gtk-4.1-dev build-essential wget libssl-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev
 
+      - name: Install system dependencies (macOS)
+        if: matrix.os == 'macos-latest'
+        run: |
+          brew update
+          brew install wget
+
       - name: Install frontend dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile # 使用pnpm安装依赖
 
       - name: Build frontend
-        run: npm run build
+        run: pnpm run build # 使用pnpm运行构建脚本
 
       - name: Build Tauri app
         uses: tauri-apps/tauri-action@v0
