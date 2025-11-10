@@ -18,12 +18,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22.16.0
-          cache: 'pnpm' # 关键：指定使用pnpm进行缓存
-
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
@@ -35,6 +29,11 @@ jobs:
           which pnpm  # 在 Linux/macOS 上
           where pnpm  # 在 Windows 上
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.16.0
+          cache: 'pnpm' # 关键：指定使用pnpm进行缓存
       - name: Install system dependencies (Ubuntu)
         if: matrix.os == 'ubuntu-latest'
         run: |
