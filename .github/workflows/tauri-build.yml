@@ -21,41 +21,80 @@ jobs:
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: latest # 确保pnpm可用
+          version: latest
           run_install: false
+
       - name: Verify pnpm
         run: |
           pnpm -v
-          which pnpm  # 在 Linux/macOS 上
-          where pnpm  # 在 Windows 上
+          which pnpm || where pnpm || echo "pnpm command available"
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 22.16.0
-          cache: 'pnpm' # 关键：指定使用pnpm进行缓存
+          cache: 'pnpm'
+
+      # Windows 特定设置
+      - name: Setup Windows build environment
+        if: matrix.os == 'windows-latest'
+        uses: msys2/setup-msys2@v2
+        with:
+          update: true
+          install: >-
+            base-devel
+            mingw-w64-x86_64-toolchain
+            mingw-w64-x86_64-sqlite3
+
+      - name: Install Windows dependencies
+        if: matrix.os == 'windows-latest'
+        run: |
+          # 安装 Visual Studio 构建工具
+          choco install -y visualstudio2022buildtools
+          choco install -y visualstudio2022-workload-vctools
+
+      # Ubuntu 特定依赖
       - name: Install system dependencies (Ubuntu)
         if: matrix.os == 'ubuntu-latest'
         run: |
           sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev build-essential wget libssl-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            build-essential \
+            wget \
+            libssl-dev \
+            libgtk-3-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev \
+            libsqlite3-dev  # SQLite 开发库
 
+      # macOS 特定依赖
       - name: Install system dependencies (macOS)
         if: matrix.os == 'macos-latest'
         run: |
           brew update
-          brew install wget
+          brew install wget sqlite
+
+      # 设置 Rust 工具链
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchains: stable
+          targets: ${{ matrix.os == 'windows-latest' && 'x86_64-pc-windows-msvc' || matrix.os == 'macos-latest' && 'x86_64-apple-darwin' || 'x86_64-unknown-linux-gnu' }}
 
       - name: Install frontend dependencies
-        run: pnpm install --frozen-lockfile # 使用pnpm安装依赖
+        run: pnpm install --frozen-lockfile
 
       - name: Build frontend
-        run: pnpm run build # 使用pnpm运行构建脚本
+        run: pnpm run build
 
       - name: Build Tauri app
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # 设置 SQLite 环境变量（Windows 特定）
+          SQLITE3_LIB_DIR: ${{ matrix.os == 'windows-latest' && 'C:/msys64/mingw64/lib' || '' }}
+          SQLITE3_INCLUDE_DIR: ${{ matrix.os == 'windows-latest' && 'C:/msys64/mingw64/include' || '' }}
         with:
           tagName: app-v__VERSION__
           releaseName: 'App v__VERSION__'
