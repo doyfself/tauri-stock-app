@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [main]
 
+# 1. 在工作流级别或作业级别显式配置 GITHUB_TOKEN 的权限
+permissions:
+  contents: write  # 授予创建Release和上传资产的权限
+
 jobs:
   build-windows:
     runs-on: windows-latest
