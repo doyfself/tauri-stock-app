@@ -36,47 +36,15 @@ jobs:
           install: >-
             base-devel
             mingw-w64-x86_64-toolchain
-            mingw-w64-x86_64-sqlite3
 
-      - name: Install Windows dependencies with retry
+      - name: Install SQLite3 and build tools
         run: |
-          # 设置 PowerShell 执行策略和安全协议
-          Set-ExecutionPolicy Bypass -Scope Process -Force
-          [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
-
-          # 重试函数
-          function Install-WithRetry {
-            param($PackageName, $MaxRetries = 3)
-            $retryCount = 0
-            do {
-              $retryCount++
-              try {
-                Write-Host "Attempt $retryCount to install $PackageName"
-                choco install -y $PackageName --no-progress
-                if ($LASTEXITCODE -eq 0) {
-                  Write-Host "Successfully installed $PackageName"
-                  return $true
-                }
-              }
-              catch {
-                Write-Host "Attempt $retryCount failed: $($_.Exception.Message)"
-              }
-              if ($retryCount -lt $MaxRetries) {
-                Write-Host "Waiting 60 seconds before retry..."
-                Start-Sleep -Seconds 60
-              }
-            } while ($retryCount -lt $MaxRetries)
-            Write-Host "Failed to install $PackageName after $MaxRetries attempts"
-            return $false
-          }
-
-          # 尝试安装 Visual Studio 构建工具
-          $vsSuccess = Install-WithRetry "visualstudio2022buildtools"
-          $vctoolsSuccess = Install-WithRetry "visualstudio2022-workload-vctools"
-
-          if (-not ($vsSuccess -and $vctoolsSuccess)) {
-            Write-Host "Chocolatey installation failed, using pre-installed Visual Studio environment"
-          }
+          # 使用 vcpkg 安装 SQLite3（推荐方式）
+          git clone https://github.com/Microsoft/vcpkg.git
+          cd vcpkg
+          .\bootstrap-vcpkg.bat
+          .\vcpkg integrate install
+          .\vcpkg install sqlite3:x64-windows
 
       - name: Setup Rust for Windows
         uses: dtolnay/rust-toolchain@stable
@@ -94,9 +62,11 @@ jobs:
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SQLITE3_LIB_DIR: 'C:/msys64/mingw64/lib'
-          SQLITE3_INCLUDE_DIR: 'C:/msys64/mingw64/include'
-          RUSTFLAGS: '-C link-arg=-s'
+          # 使用 vcpkg 的 SQLite3 路径
+          SQLITE3_LIB_DIR: '${{ github.workspace }}/vcpkg/installed/x64-windows/lib'
+          SQLITE3_INCLUDE_DIR: '${{ github.workspace }}/vcpkg/installed/x64-windows/include'
+          # 添加 vcpkg 到路径
+          VCPKG_ROOT: '${{ github.workspace }}/vcpkg'
         with:
           tagName: app-v__VERSION__
           releaseName: 'Windows App v__VERSION__'

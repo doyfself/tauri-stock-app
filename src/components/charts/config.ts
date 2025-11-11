@@ -1,5 +1,5 @@
 const klineConfig = {
-  padding: 20, // 上下间距
+  padding: 40, // 上下间距
   right: 60, // 右侧留白
   candleWidth: 6, // K线实体宽度
   candleMargin: 2, // K线间距
