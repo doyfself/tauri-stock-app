@@ -124,28 +124,33 @@ export default function StockKlineChartDetails({
     return marketList.some((item) => item.symbol === code);
   }, [code]);
 
+  // 获取当前自选信息的函数
   const getCurrentSelection = async () => {
     if (code) {
       const res = await getSelectionByCode(code);
       return res.data;
     }
+    return null;
+  };
+
+  // 刷新自选状态
+  const refreshSelectionStatus = async () => {
+    if (!code) return;
+
+    const res = await isSelectionExistsApi(code);
+    setInSelection(res.data);
+
+    // 如果存在自选，获取自选信息
+    if (res.data) {
+      const selection = await getCurrentSelection();
+      setCurrentSelection(selection as SelectionItem);
+    } else {
+      setCurrentSelection(null);
+    }
   };
 
   useEffect(() => {
-    const fn = async () => {
-      if (!code) return;
-      const res = await isSelectionExistsApi(code);
-      setInSelection(res.data);
-
-      // 如果存在自选，获取自选信息
-      if (res.data) {
-        const selection = await getCurrentSelection();
-        setCurrentSelection(selection as SelectionItem);
-      } else {
-        setCurrentSelection(null);
-      }
-    };
-    fn();
+    refreshSelectionStatus();
   }, [code]);
 
   const fetchData = async () => {
@@ -181,8 +186,8 @@ export default function StockKlineChartDetails({
       };
       const res = await addSelectionApi(selection);
       if (res.data) {
-        setInSelection(true);
-        setCurrentSelection(selection);
+        // 添加成功后刷新自选状态
+        await refreshSelectionStatus();
         triggerRefresh();
       } else {
         console.error('添加自选失败');
@@ -193,8 +198,8 @@ export default function StockKlineChartDetails({
   const delSelection = async () => {
     const res = await deleteSelectionApi(code);
     if (res.data) {
-      setInSelection(false);
-      setCurrentSelection(null);
+      // 删除成功后刷新自选状态
+      await refreshSelectionStatus();
       triggerRefresh();
     } else {
       console.error('删除自选失败');
@@ -202,16 +207,29 @@ export default function StockKlineChartDetails({
   };
 
   const markColorEvent = async (key: string) => {
-    if (inSelection && details) {
-      const selection = {
-        ...currentSelection,
-        color: markColors[key] || '',
-      } as SelectionItem;
-      const res = await addSelectionApi(selection);
-      if (res.data) {
-        setCurrentSelection(selection); // 更新当前自选信息
-        triggerRefresh();
-      }
+    if (!code) return;
+
+    // 先获取最新的自选信息
+    const latestSelection = await getCurrentSelection();
+    if (!latestSelection) {
+      console.error('自选信息不存在，无法标记颜色');
+      // 如果自选不存在，刷新状态
+      await refreshSelectionStatus();
+      return;
+    }
+
+    const selection = {
+      ...latestSelection,
+      color: markColors[key] || '',
+    } as SelectionItem;
+
+    const res = await addSelectionApi(selection);
+    if (res.data) {
+      // 更新成功后刷新自选状态
+      await refreshSelectionStatus();
+      triggerRefresh();
+    } else {
+      console.error('标记颜色失败');
     }
   };
 
@@ -344,7 +362,12 @@ export default function StockKlineChartDetails({
           })}
         </ul>
         {/* 只有非市场指数且在自选中才显示备注 */}
-        {!isMarketIndex && inSelection && <StockRemark code={code} />}
+        {!isMarketIndex && inSelection && (
+          <StockRemark
+            code={code}
+            onRemarkUpdate={refreshSelectionStatus} // 传递刷新函数给备注组件
+          />
+        )}
       </div>
     );
 }
