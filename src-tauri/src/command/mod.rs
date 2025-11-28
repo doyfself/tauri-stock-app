@@ -7,6 +7,6 @@ pub mod orders_command;
 pub mod selection_command;
 pub mod self_reflect_command;
 pub mod stock_command;
-pub mod stock_lines_command;
 pub mod stock_review_command;
+pub mod trend_lines_cmd;
 pub mod xueqiu_command;

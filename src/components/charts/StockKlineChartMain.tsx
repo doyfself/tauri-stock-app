@@ -17,7 +17,9 @@ import { mapKlineToSvg, calculateMA } from './util';
 import klineConfig from './config';
 import { useEffect, useState, useMemo } from 'react';
 import { getKlineDataApi, getOrdersByCodeApi } from '@/apis/api';
-import type { KlineDataResponse, OrderItem } from '@/types/response';
+import type { OrderItem } from '@/types/response';
+import type { StockKlineDataType } from './types';
+
 export default function StockKlineChartMain({
   code,
   width,
@@ -25,7 +27,7 @@ export default function StockKlineChartMain({
   timestamp = '',
   onlyShow = false,
 }: StockKlineChartMainProps) {
-  const [data, setData] = useState<KlineDataResponse[]>([]);
+  const [data, setData] = useState<StockKlineDataType[]>([]);
   const [maxPrice, setMaxPrice] = useState<number>(0);
   const [minPrice, setMinPrice] = useState<number>(0);
   const [maData, setMaData] = useState<number[][]>([]); // 用于存储MA数据
@@ -58,8 +60,12 @@ export default function StockKlineChartMain({
       const response = await getKlineDataApi(code, period, timestamp, limit);
       if (response && response.data) {
         const newData = response.data.map((item) => {
+          const timestamp = Number(item.date);
           item.date = formatDate(item.date, 'YYYY-MM-DD HH:mm');
-          return item;
+          return {
+            timestamp,
+            ...item,
+          };
         });
         setData(newData);
         if (selectIndex === -1) setSelectIndex(newData.length - 1);
@@ -175,14 +181,18 @@ export default function StockKlineChartMain({
             }}
           />
 
-          <StockKlineChartLine
-            code={code}
-            period={period}
-            width={width}
-            height={candleHeight}
-            maxPrice={maxPrice}
-            minPrice={minPrice}
-          />
+          {data.length && (
+            <StockKlineChartLine
+              code={code}
+              period={period}
+              width={width}
+              height={candleHeight}
+              maxPrice={maxPrice}
+              minPrice={minPrice}
+              coordinateX={coordinateX} // 每根K线的x中心
+              klineData={data}
+            />
+          )}
           <StockKlineChartTooltip
             data={data}
             coordinateX={coordinateX}
@@ -199,6 +209,8 @@ export default function StockKlineChartMain({
             period={period}
             maxPrice={maxPrice}
             minPrice={minPrice}
+            coordinateX={coordinateX} // 每根K线的x中心
+            klineData={data}
           />
         )}
       </div>

@@ -147,6 +147,26 @@ export const deleteStockLineApi = (id: number) =>
     req: { id },
   });
 
+// 查询趋势线
+export const getTrendLinesApi = (code: string, period: string) =>
+  invoke<responseType.GetTrendLinesInvokeReturn>('query_trend_lines_cmd', {
+    code,
+    period,
+  });
+
+// 添加趋势线（批量）
+export const addTrendLinesApi = (
+  lines: Omit<responseType.StockTrendLineType, 'id'>[], // 不需要传 id
+) =>
+  invoke<responseType.InvokeBooleanReturn>('add_trend_lines_cmd', {
+    reqs: lines,
+  });
+
+// 删除趋势线
+export const deleteTrendLineApi = (id: number) =>
+  invoke<responseType.InvokeBooleanReturn>('delete_trend_line_cmd', {
+    req: { id },
+  });
 // 操作反省
 
 export const getSelfReflectApi = () =>

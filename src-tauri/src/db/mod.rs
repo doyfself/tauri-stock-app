@@ -8,5 +8,5 @@ pub mod orders_db;
 pub mod selection_db;
 pub mod self_reflect_db;
 pub mod stock_db;
-pub mod stock_lines_db;
 pub mod stock_review_db;
+pub mod trend_lines_db;

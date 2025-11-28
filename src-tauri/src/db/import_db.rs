@@ -1,7 +1,7 @@
 use crate::db::init_db::{
     init_all_stocks_database, init_app_config_database, init_holdings_database,
     init_market_analysis_database, init_my_selection_database, init_orders_database,
-    init_self_reflect_database, init_stock_lines_database, init_stock_review_database,
+    init_self_reflect_database, init_stock_review_database, init_trend_lines_database,
 };
 use rusqlite::{params, Connection, Result};
 use tauri::AppHandle;
@@ -31,7 +31,7 @@ pub fn import_single_database(
         "stock_review" => init_stock_review_database(app),
         "self_reflect" => init_self_reflect_database(app),
         "market_analysis" => init_market_analysis_database(app),
-        "stock_lines" => init_stock_lines_database(app),
+        "trend_lines" => init_trend_lines_database(app),
         "holdings" => init_holdings_database(app),
         "orders" => init_orders_database(app),
         _ => return Err(format!("未知的数据库类型: {}", db_name)),
@@ -45,7 +45,7 @@ pub fn import_single_database(
         "stock_review" => import_stock_review_data(&mut current_conn, &backup_conn),
         "self_reflect" => import_self_reflect_data(&mut current_conn, &backup_conn),
         "market_analysis" => import_market_analysis_data(&mut current_conn, &backup_conn),
-        "stock_lines" => import_stock_lines_data(&mut current_conn, &backup_conn),
+        "trend_lines" => import_trend_lines_data(&mut current_conn, &backup_conn),
         "holdings" => import_holdings_data(&mut current_conn, &backup_conn),
         "orders" => import_orders_data(&mut current_conn, &backup_conn),
         _ => Ok(()),
@@ -262,12 +262,12 @@ fn import_market_analysis_data(
     Ok(())
 }
 
-fn import_stock_lines_data(
+fn import_trend_lines_data(
     current_conn: &mut Connection,
     backup_conn: &Connection,
 ) -> Result<(), String> {
     let mut stmt = backup_conn
-        .prepare("SELECT id, code, period, y, height FROM stock_lines")
+        .prepare("SELECT id, code, period, start_time, end_time, start_price, end_price FROM trend_lines")
         .map_err(|e| format!("准备查询失败: {}", e))?;
 
     let rows = stmt
@@ -276,8 +276,10 @@ fn import_stock_lines_data(
                 row.get::<_, i64>(0)?,
                 row.get::<_, String>(1)?,
                 row.get::<_, String>(2)?,
-                row.get::<_, f64>(3)?,
-                row.get::<_, f64>(4)?,
+                row.get::<_, String>(3)?, // 时间戳字符串（如 "1717020800000"）
+                row.get::<_, String>(4)?,
+                row.get::<_, f64>(5)?,
+                row.get::<_, f64>(6)?,
             ))
         })
         .map_err(|e| format!("查询备份数据失败: {}", e))?;
@@ -287,17 +289,18 @@ fn import_stock_lines_data(
         .map_err(|e| format!("开始事务失败: {}", e))?;
 
     for row in rows {
-        let (id, code, period, y, height) = row.map_err(|e| format!("读取行数据失败: {}", e))?;
+        let (id, code, period, start_time, end_time, start_price, end_price) =
+            row.map_err(|e| format!("读取行数据失败: {}", e))?;
+
         tx.execute(
-            "INSERT OR REPLACE INTO stock_lines (id, code, period, y, height) VALUES (?, ?, ?, ?, ?)",
-            params![id, code, period, y, height],
-        ).map_err(|e| format!("插入数据失败: {}", e))?;
+            "INSERT OR REPLACE INTO trend_lines (id, code, period, start_time, end_time, start_price, end_price) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            params![id, code, period, start_time, end_time, start_price, end_price],
+        ).map_err(|e| format!("插入 trend_lines 数据失败: {}", e))?;
     }
 
     tx.commit().map_err(|e| format!("提交事务失败: {}", e))?;
     Ok(())
 }
-
 fn import_holdings_data(
     current_conn: &mut Connection,
     backup_conn: &Connection,

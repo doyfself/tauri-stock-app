@@ -99,6 +99,20 @@ export type GetStockLinesInvokeReturn = Promise<
   ResponseBaseType<StockLineType[]>
 >;
 
+export interface StockTrendLineType {
+  id: number; // 唯一标识符
+  code: string; // 股票代码
+  period: string; // 周期（如 "day"、"week"）
+  start_time: number; // 起始K线时间戳（13位毫秒）
+  start_price: number; // 起始价格
+  end_time: number; // 结束K线时间戳（13位毫秒）
+  end_price: number; // 结束价格
+}
+
+export type GetTrendLinesInvokeReturn = Promise<
+  ResponseBaseType<StockTrendLineType[]>
+>;
+
 export interface StockReviewItem {
   id: number; // 唯一标识符
   code: string; // 股票名称

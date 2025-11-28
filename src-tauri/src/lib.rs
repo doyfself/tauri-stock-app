@@ -30,9 +30,6 @@ pub fn run() {
             command::xueqiu_command::get_batch_stock_quote,
             command::xueqiu_command::get_single_stock_detail,
             command::xueqiu_command::get_minute_chart,
-            command::stock_lines_command::add_stock_lines_cmd,
-            command::stock_lines_command::query_stock_lines_cmd,
-            command::stock_lines_command::delete_stock_line_cmd,
             command::stock_review_command::get_stock_review_list_cmd,
             command::stock_review_command::add_stock_review_cmd,
             command::stock_review_command::get_single_stock_review_cmd,
@@ -55,6 +52,9 @@ pub fn run() {
             command::orders_command::add_order_cmd,
             command::orders_command::delete_order_cmd,
             command::import_command::import_database,
+            command::trend_lines_cmd::add_trend_lines_cmd,
+            command::trend_lines_cmd::query_trend_lines_cmd,
+            command::trend_lines_cmd::delete_trend_line_cmd,
         ])
         .plugin(tauri_plugin_opener::init())
         .run(tauri::generate_context!())

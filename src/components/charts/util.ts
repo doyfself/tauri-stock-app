@@ -180,6 +180,50 @@ export const yToPrice = (
 };
 
 /**
+ * 将实际价格转换为SVG的y坐标
+ * @param price - 实际价格
+ * @param height - SVG总高度
+ * @param maxPrice - K线图最高价
+ * @param minPrice - K线图最低价
+ * @returns 对应的SVG y坐标（像素值）
+ */
+export const priceToY = (
+  price: number,
+  height: number,
+  maxPrice: number,
+  minPrice: number,
+): number => {
+  const validHeight = height - 2 * klineConfig.padding;
+  if (validHeight <= 0) return height / 2;
+
+  // 处理价格超出范围的情况（可选，通常不会发生）
+  const clampedPrice = Math.max(minPrice, Math.min(maxPrice, price));
+  const priceRange = maxPrice - minPrice;
+
+  let relativeY: number;
+  if (priceRange === 0) {
+    relativeY = validHeight / 2; // 或 0，取决于你想放哪
+  } else {
+    // 注意：maxPrice 在顶部，所以价格越高，y 越小
+    relativeY = ((maxPrice - clampedPrice) / priceRange) * validHeight;
+  }
+
+  return klineConfig.padding + relativeY;
+};
+
+// 时间戳转SVG x坐标（线性映射）
+export const timeToX = (
+  timestamp: number,
+  containerWidth: number,
+  timeMin: number,
+  timeMax: number,
+): number => {
+  if (timeMax <= timeMin) return containerWidth / 2;
+  const ratio = (timestamp - timeMin) / (timeMax - timeMin);
+  return Math.max(0, Math.min(containerWidth, ratio * containerWidth));
+};
+
+/**
  * 根据带市场前缀的股票代码判断最大涨跌幅
  * @param code - 格式：sh/sz+6位数字（如sh600000、sz300001）
  * @returns 涨跌幅上限（20=±20%，10=±10%，30=±30%）

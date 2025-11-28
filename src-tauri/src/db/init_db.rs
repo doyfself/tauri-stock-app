@@ -103,22 +103,24 @@ pub fn init_market_analysis_database(app: &AppHandle) -> Result<Connection, Stri
     Ok(conn)
 }
 
-pub fn init_stock_lines_database(app: &AppHandle) -> Result<Connection, String> {
-    // 初始化数据库连接，表文件名为"stock_lines"
-    let conn = init_database(app, "stock_lines")?;
+pub fn init_trend_lines_database(app: &AppHandle) -> Result<Connection, String> {
+    // 初始化数据库连接，表文件名为 "trend_lines"
+    let conn = init_database(app, "trend_lines")?;
 
-    // 根据CSV表头创建表结构，字段与LINE_HEADERS一一对应
+    // 创建用于存储斜线（趋势线）的新表
     conn.execute(
-        "CREATE TABLE IF NOT EXISTS stock_lines (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,  -- 唯一自增ID（删除用）
-            code TEXT NOT NULL,                     -- 股票代码
-            period TEXT NOT NULL,                   -- 周期（日线/周线等）
-            y REAL NOT NULL,                       
-            height REAL NOT NULL                    -- 线条高度
+        "CREATE TABLE IF NOT EXISTS trend_lines (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            code TEXT NOT NULL,               -- 股票代码
+            period TEXT NOT NULL,             -- 周期（如 'day', 'week' 等）
+            start_time INTEGER NOT NULL,      -- 起始K线时间戳（13位毫秒）
+            start_price REAL NOT NULL,        -- 起始价格
+            end_time INTEGER NOT NULL,        -- 结束K线时间戳（13位毫秒）
+            end_price REAL NOT NULL           -- 结束价格
         )",
         [], // 无参数
     )
-    .map_err(|e| format!("无法创建 stock_lines 表: {}", e))?;
+    .map_err(|e| format!("无法创建 trend_lines 表: {}", e))?;
 
     Ok(conn)
 }

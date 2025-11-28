@@ -1,4 +1,4 @@
-import type { OrderItem } from '@/types/response';
+import type { OrderItem, KlineDataResponse } from '@/types/response';
 export interface KlineDataType {
   date: string; // 日期格式：YYYY-MM-DD HH:mm
   open: number; // 开盘价
@@ -36,3 +36,5 @@ export interface StockKlineChartVolumeProps
   index: number; // 当前选中的柱子索引
   isHovered: boolean; // 是否处于悬停状态
 }
+
+export type StockKlineDataType = { timestamp: number } & KlineDataResponse;

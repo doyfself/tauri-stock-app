@@ -1,16 +1,19 @@
-import { getStockLineApi, deleteStockLineApi } from '@/apis/api';
 import React, { useEffect, useState, useRef, useCallback } from 'react';
-import { priceToHorizontalLine } from './util';
+import { getTrendLinesApi, deleteTrendLineApi } from '@/apis/api';
+import { priceToY } from './util';
 import { useSelectionLineStore } from '@/stores/userStore';
-import { StockLineType } from '@/types/response';
+import type { StockTrendLineType } from '@/types/response';
+import type { StockKlineDataType } from './types';
 
 interface StockKlineChartLineProps {
   code: string;
   period: string;
-  width: number; // 当前容器宽度
-  height: number; // 当前容器高度
-  maxPrice: number; // K线图最高价
-  minPrice: number; // K线图最低价
+  width: number;
+  height: number;
+  maxPrice: number;
+  minPrice: number;
+  coordinateX: number[]; // 每根K线的x中心位置（长度应与klineData一致）
+  klineData: StockKlineDataType[];
 }
 
 export default function StockKlineChartLine({
@@ -20,29 +23,33 @@ export default function StockKlineChartLine({
   height: containerHeight,
   maxPrice,
   minPrice,
+  coordinateX,
+  klineData,
 }: StockKlineChartLineProps) {
-  const [lineData, setLineData] = useState<StockLineType[]>([]);
+  const [lines, setLines] = useState<StockTrendLineType[]>([]);
   const [selectedLineId, setSelectedLineId] = useState<number | null>(null);
   const containerRef = useRef<SVGGElement>(null);
-  // 从store获取状态和方法
+
   const refreshFlag = useSelectionLineStore((state) => state.refreshFlag);
   const triggerRefresh = useSelectionLineStore(
     (state) => state.triggerSelectionRefresh,
   );
 
-  // 加载水平线数据
+  // 加载趋势线
   useEffect(() => {
-    const fetchLineData = async () => {
-      const res = await getStockLineApi(code, period);
-      console.log(res, 'dddd');
-      setLineData(res.data || []);
-      setSelectedLineId(null);
+    const fetchLines = async () => {
+      try {
+        const res = await getTrendLinesApi(code, period);
+        setLines(res.data || []);
+        setSelectedLineId(null);
+      } catch (err) {
+        console.error('加载趋势线失败:', err);
+      }
     };
-
-    fetchLineData();
+    fetchLines();
   }, [code, period, refreshFlag]);
 
-  // 点击空白区域取消选中
+  // 点击外部取消选中
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (
@@ -52,28 +59,82 @@ export default function StockKlineChartLine({
         setSelectedLineId(null);
       }
     };
-
     document.addEventListener('click', handleClickOutside);
     return () => document.removeEventListener('click', handleClickOutside);
   }, []);
 
-  // 计算删除按钮位置（针对水平线优化）
-  const getDeleteBtnPosition = useCallback(
-    (y: number) => {
-      // 水平线中间偏左位置，避免右侧溢出
-      const midX = Math.min(containerWidth / 4, containerWidth - 60); // 左侧1/4处，预留按钮宽度
-      const btnY = Math.max(y - 30, 20); // 线上方30px，不超过顶部
+  // 替换 getLineSegment 为 getExtendedLine
+  const getExtendedLine = useCallback(
+    (line: StockTrendLineType) => {
+      const startIndex = klineData.findIndex(
+        (item) => item.timestamp == line.start_time,
+      );
+      const endIndex = klineData.findIndex(
+        (item) => item.timestamp == line.end_time,
+      );
 
-      return { x: midX, y: btnY };
+      const x1 = startIndex !== -1 ? coordinateX[startIndex] : 0;
+      const x2 = endIndex !== -1 ? coordinateX[endIndex] : containerWidth;
+
+      const y1 = priceToY(
+        line.start_price,
+        containerHeight,
+        maxPrice,
+        minPrice,
+      );
+      const y2 = priceToY(line.end_price, containerHeight, maxPrice, minPrice);
+
+      // 水平线：直接贯穿
+      if (Math.abs(y1 - y2) < 1e-5) {
+        return { x1: 0, y1, x2: containerWidth, y2: y1 };
+      }
+
+      // 垂直线（理论上不会发生，但防御性处理）
+      if (Math.abs(x2 - x1) < 1e-5) {
+        return { x1, y1: 0, x2: x1, y2: containerHeight };
+      }
+
+      // 斜线：计算与左右边界的交点
+      const m = (y2 - y1) / (x2 - x1); // 斜率
+      const b = y1 - m * x1; // 截距
+
+      const yAtLeft = m * 0 + b; // x = 0 时的 y
+      const yAtRight = m * containerWidth + b; // x = containerWidth 时的 y
+
+      return {
+        x1: 0,
+        y1: yAtLeft,
+        x2: containerWidth,
+        y2: yAtRight,
+      };
     },
-    [containerWidth],
+    [
+      klineData,
+      coordinateX,
+      containerWidth,
+      containerHeight,
+      maxPrice,
+      minPrice,
+    ],
   );
 
-  // 处理删除
+  // 删除按钮放在 (x1,y1) 和 (x2,y2) 的中点附近
+  const getDeleteBtnPosition = useCallback(
+    (x1: number, y1: number, x2: number, y2: number) => {
+      const midX = (x1 + x2) / 2;
+      const midY = (y1 + y2) / 2;
+      return {
+        x: Math.max(20, Math.min(midX - 20, containerWidth - 60)),
+        y: Math.max(10, Math.min(midY - 10, containerHeight - 30)),
+      };
+    },
+    [containerWidth, containerHeight],
+  );
+
   const handleDelete = async (e: React.MouseEvent, id: number) => {
     e.stopPropagation();
     try {
-      await deleteStockLineApi(id);
+      await deleteTrendLineApi(id);
       triggerRefresh();
       setSelectedLineId(null);
     } catch (err) {
@@ -82,48 +143,46 @@ export default function StockKlineChartLine({
     }
   };
 
-  // 线条点击切换选中状态
   const handleLineClick = (e: React.MouseEvent, lineId: number) => {
     e.stopPropagation();
     setSelectedLineId(lineId);
   };
 
-  if (lineData.length === 0) return null;
+  if (lines.length === 0) return null;
 
   return (
     <g ref={containerRef}>
-      {lineData.map((line) => {
-        const { start, end } = priceToHorizontalLine(
-          line.y, // 水平线y坐标
-          containerWidth,
-          containerHeight,
-          maxPrice,
-          minPrice,
-        );
+      // 替换 map 中的逻辑
+      {lines.map((line) => {
+        const extended = getExtendedLine(line); // 👈 使用新函数
         const isSelected = selectedLineId === line.id;
+        const btnPos = getDeleteBtnPosition(
+          extended.x1,
+          extended.y1,
+          extended.x2,
+          extended.y2,
+        );
 
         return (
-          <React.Fragment key={`line-${line.id}`}>
-            {/* 水平线条 */}
+          <React.Fragment key={`trend-line-${line.id}`}>
             <line
               onClick={(e) => handleLineClick(e, line.id)}
-              x1={start.x}
-              y1={start.y}
-              x2={end.x}
-              y2={end.y}
-              stroke={isSelected ? '#ff9800' : '#2196F3'}
+              x1={extended.x1}
+              y1={extended.y1}
+              x2={extended.x2}
+              y2={extended.y2}
+              stroke={isSelected ? '#ff9800' : '#9c27b0'} // 👈 紫色
               strokeWidth={isSelected ? 2.5 : 1.5}
-              strokeOpacity={isSelected ? 1 : 0.8}
+              strokeOpacity={isSelected ? 1 : 0.85}
               cursor="pointer"
               style={{ transition: 'all 0.2s ease' }}
             />
 
-            {/* 选中时显示删除按钮 */}
             {isSelected && (
               <g onClick={(e) => e.stopPropagation()}>
                 <rect
-                  x={getDeleteBtnPosition(start.y).x}
-                  y={getDeleteBtnPosition(start.y).y}
+                  x={btnPos.x}
+                  y={btnPos.y}
                   width={40}
                   height={20}
                   rx={3}
@@ -132,18 +191,16 @@ export default function StockKlineChartLine({
                   stroke="#ddd"
                   strokeWidth={1}
                   filter="drop-shadow(0 2px 3px rgba(0,0,0,0.1))"
-                  style={{ animation: 'fadeIn 0.2s forwards' }}
                 />
                 <text
-                  x={getDeleteBtnPosition(start.y).x + 20}
-                  y={getDeleteBtnPosition(start.y).y + 14}
+                  x={btnPos.x + 20}
+                  y={btnPos.y + 14}
                   textAnchor="middle"
                   fill="#ff4d4f"
                   fontSize={12}
                   fontWeight={500}
                   onClick={(e) => handleDelete(e, line.id)}
                   cursor="pointer"
-                  style={{ animation: 'fadeIn 0.2s 0.1s forwards' }}
                 >
                   删除
                 </text>
