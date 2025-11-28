@@ -3,7 +3,7 @@ import { useState, type ChangeEvent, useEffect, useRef } from 'react';
 import { throttle } from '@/utils/common';
 import { queryStockByWordApi } from '@/apis/api';
 import type { SearchStocksResponse } from '@/types/response';
-
+import { marketList } from '@/config';
 export interface StockValue {
   code: string;
   name: string;
@@ -52,25 +52,24 @@ const HeaderSearch = (props: HeaderSearchProps) => {
       // 先显示 code
       setSearchWord(code);
 
-      const result = await queryStockByWordApi(queryCode);
-      if (result.data && result.data.length > 0) {
-        // 查找完全匹配的股票
-        const exactMatch = result.data.find((item) => item.symbol === code);
-        if (exactMatch) {
-          setSearchWord(exactMatch.name);
+      const req = await queryStockByWordApi(queryCode);
+      const result = req.data.concat(marketList);
+      // 查找完全匹配的股票
+      const exactMatch = result.find((item) => item.symbol === code);
+      if (exactMatch) {
+        setSearchWord(exactMatch.name);
 
-          // 如果父组件没有提供完整的 value，可以自动补全
-          if (!value?.name) {
-            const stockValue = {
-              code: exactMatch.symbol,
-              name: exactMatch.name,
-            };
-            onChange?.(stockValue);
-          }
-        } else {
-          // 没有找到完全匹配的，保持显示 code
-          setSearchWord(code);
+        // 如果父组件没有提供完整的 value，可以自动补全
+        if (!value?.name) {
+          const stockValue = {
+            code: exactMatch.symbol,
+            name: exactMatch.name,
+          };
+          onChange?.(stockValue);
         }
+      } else {
+        // 没有找到完全匹配的，保持显示 code
+        setSearchWord(code);
       }
     } catch (error) {
       console.error('Failed to fetch stock by code:', error);
@@ -89,7 +88,18 @@ const HeaderSearch = (props: HeaderSearchProps) => {
     }
 
     const result = await queryStockByWordApi(val);
-    if (result.data) setResult(result.data);
+    if (result.data && result.data.length > 0) {
+      setResult(result.data);
+    } else {
+      const res = marketList.filter(
+        (item) => item.name.includes(val) || item.symbol.includes(val),
+      );
+      if (res.length > 0) {
+        setResult(res);
+      } else {
+        setResult([]);
+      }
+    }
   }, 200);
 
   const resultItemClick = (item: SearchStocksResponse) => {

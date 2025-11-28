@@ -49,6 +49,7 @@ pub fn run() {
             command::holdings_command::update_holding_cmd,
             command::holdings_command::delete_holding_cmd,
             command::holdings_command::get_latest_holding_by_code_cmd,
+            command::holdings_command::get_monthly_stats_cmd,
             command::orders_command::get_all_orders_cmd,
             command::orders_command::get_orders_by_code_cmd,
             command::orders_command::add_order_cmd,

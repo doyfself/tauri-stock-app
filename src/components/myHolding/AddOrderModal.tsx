@@ -14,18 +14,18 @@ import { handleOrderWithHolding, type FieldType } from './HoldingLogic';
 import HeaderSearch from '@/components/common/HeaderSearch';
 import type { HoldingItem } from '@/types/response';
 
-interface SelfReflectModalProps {
+interface AddOrderModalProps {
   modalOpen: boolean;
   setModalOpen: (val: boolean) => void;
   onOrderSuccess: () => void;
   holdingList: HoldingItem[];
 }
 
-export default function SelfReflectModal({
+export default function AddOrderModal({
   modalOpen,
   setModalOpen,
   onOrderSuccess,
-}: SelfReflectModalProps) {
+}: AddOrderModalProps) {
   const [form] = Form.useForm();
   const [submitting, setSubmitting] = useState(false);
   const [actionType, setActionType] = useState<'1' | '0'>('1');

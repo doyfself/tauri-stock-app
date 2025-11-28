@@ -234,6 +234,11 @@ export const getOrdersByCodeApi = (code: string) =>
   invoke<responseType.GetOrdersByCodeInvokeReturn>('get_orders_by_code_cmd', {
     code,
   });
+
+export const getMonthlyStatsApi = (params: { year: number; month: number }) =>
+  invoke<responseType.GetMonthlyStatsInvokeReturn>('get_monthly_stats_cmd', {
+    params,
+  });
 /**
  * 添加委托
  */

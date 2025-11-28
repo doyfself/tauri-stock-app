@@ -69,3 +69,18 @@ pub struct QueryHistoryParams {
     pub page: i32,      // 页码，从1开始
     pub page_size: i32, // 每页大小
 }
+
+#[derive(serde::Deserialize)]
+pub struct MonthlyStatsParams {
+    pub year: i32,
+    pub month: i32,
+}
+
+#[derive(Debug, Clone, serde::Serialize)]
+pub struct MonthlyStats {
+    pub year: i32,
+    pub month: i32,
+    pub operation_count: i32, // 操作次数
+    pub win_rate: f64,        // 胜率（0.0 ~ 1.0）
+    pub total_profit: f64,    // 总盈利金额
+}

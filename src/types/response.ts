@@ -186,6 +186,18 @@ export type GetHoldingByCodeInvokeReturn = Promise<
   ResponseBaseType<HoldingItem>
 >;
 
+export interface MonthlyStats {
+  year: number;
+  month: number;
+  operation_count: number;
+  win_rate: number;
+  total_profit: number;
+}
+
+export type GetMonthlyStatsInvokeReturn = Promise<
+  ResponseBaseType<MonthlyStats>
+>;
+
 // 委托相关类型
 export interface OrderItem {
   id: number; // 唯一标识符

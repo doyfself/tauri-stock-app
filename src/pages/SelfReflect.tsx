@@ -41,7 +41,7 @@ export default function SelfReflect() {
         setShowData(res.data.slice(0, 10));
         setMore(res.data.length > 10);
       }
-    } catch (error) {
+    } catch {
       message.error('获取数据失败');
     } finally {
       setLoading(false);
@@ -57,7 +57,7 @@ export default function SelfReflect() {
       await deleteSelfReflectApi(id);
       message.success('删除成功');
       initList();
-    } catch (error) {
+    } catch {
       message.error('删除失败');
     }
   };
@@ -201,7 +201,7 @@ export const SelfReflectModal = ({
         setModalOpen(false);
         form.resetFields();
       }
-    } catch (error) {
+    } catch {
       message.error(initData ? '更新失败' : '新增失败');
     } finally {
       setSubmitting(false);
@@ -255,7 +255,11 @@ export const SelfReflectModal = ({
           <Input placeholder="请输入反省标题" />
         </Form.Item>
 
-        <Form.Item<FieldType> label="股票代码" name="stock">
+        <Form.Item<FieldType>
+          label="股票代码"
+          name="stock"
+          rules={[{ required: true, message: '请选择股票!' }]}
+        >
           <HeaderSearch />
         </Form.Item>
 

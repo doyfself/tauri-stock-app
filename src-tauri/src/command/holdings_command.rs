@@ -1,9 +1,9 @@
 use crate::db::holdings_db::{
     add_holding, delete_holding, query_history_holdings, query_holdings,
-    query_latest_holding_by_code, update_holding,
+    query_latest_holding_by_code, query_monthly_stats, update_holding,
 };
 use crate::structs::holdings_structs::{
-    AddHoldingReq, DeleteHoldingReq, QueryHistoryParams, UpdateHoldingReq,
+    AddHoldingReq, DeleteHoldingReq, MonthlyStatsParams, QueryHistoryParams, UpdateHoldingReq,
 };
 use serde_json;
 use tauri::command;
@@ -52,6 +52,25 @@ pub fn get_history_holdings_cmd(
             "message": format!("获取历史持仓失败: {}", e),
             "data": [],
             "count": 0
+        })),
+    }
+}
+
+#[tauri::command]
+pub fn get_monthly_stats_cmd(
+    app: AppHandle,
+    params: MonthlyStatsParams,
+) -> Result<serde_json::Value, String> {
+    match query_monthly_stats(&app, params.year, params.month) {
+        Ok(stats) => Ok(serde_json::json!({
+            "success": true,
+            "message": format!("成功获取 {} 年 {} 月交易统计", params.year, params.month),
+            "data": stats
+        })),
+        Err(e) => Ok(serde_json::json!({
+            "success": false,
+            "message": format!("获取月度统计失败: {}", e),
+            "data": null
         })),
     }
 }

@@ -1,16 +1,28 @@
 import { useState, useEffect } from 'react';
-import { Button, Tabs, message, Card, Row, Col, Statistic } from 'antd';
+import {
+  Button,
+  Tabs,
+  message,
+  Card,
+  Row,
+  Col,
+  Statistic,
+  DatePicker,
+  Spin,
+} from 'antd';
+import dayjs from 'dayjs';
 import {
   getAllHoldingsApi,
   getAllOrdersApi,
   getHistoryHoldingsApi,
+  getMonthlyStatsApi,
 } from '@/apis/api';
-import type { HoldingItem, OrderItem } from '@/types/response';
+import type { HoldingItem, OrderItem, MonthlyStats } from '@/types/response';
 import { useRealTimeData } from '@/hooks/useRealTimeData';
 import HoldingsCard from '@/components/myHolding/HoldingsCard';
 import OrdersTable from '@/components/myHolding/OrdersTable';
 import HistoryTable from '@/components/myHolding/HistoryTable';
-import SelfReflectModal from '@/components/myHolding/SelfReflectModal';
+import AddOrderModal from '@/components/myHolding/AddOrderModal';
 
 interface PaginationParams {
   current: number;
@@ -39,10 +51,30 @@ export default function MyHolding() {
   });
   const [loading, setLoading] = useState(false);
 
-  // 统计数据
-  const totalHoldings = holdingList.length;
-  const totalOrders = ordersPagination.total;
-  const totalHistory = historyPagination.total;
+  const [selectedMonth, setSelectedMonth] = useState<dayjs.Dayjs>(dayjs());
+  const [monthlyStats, setMonthlyStats] = useState<MonthlyStats | null>(null);
+  const [statsLoading, setStatsLoading] = useState(true);
+
+  const fetchMonthlyStats = async (month: dayjs.Dayjs) => {
+    const year = month.year();
+    const monthNum = month.month() + 1;
+
+    setStatsLoading(true);
+    try {
+      const res = await getMonthlyStatsApi({ year, month: monthNum });
+      if (res.success) {
+        setMonthlyStats(res.data as MonthlyStats);
+      } else {
+        setMonthlyStats(null);
+      }
+    } catch (err) {
+      console.error('获取月度统计失败:', err);
+      setMonthlyStats(null);
+      message.error('获取统计数据失败');
+    } finally {
+      setStatsLoading(false);
+    }
+  };
 
   async function fetchHoldings() {
     setLoading(true);
@@ -50,7 +82,7 @@ export default function MyHolding() {
       const holdingRes = await getAllHoldingsApi();
       setHoldingList(holdingRes.data || []);
       setSymbols(holdingRes.data.map((item) => item.code).join(','));
-    } catch (error) {
+    } catch {
       message.error('获取持仓数据失败');
     } finally {
       setLoading(false);
@@ -95,7 +127,7 @@ export default function MyHolding() {
       } else {
         message.error(orderRes.message || '获取委托记录失败');
       }
-    } catch (error) {
+    } catch {
       message.error('获取委托记录失败');
     }
   }
@@ -106,6 +138,10 @@ export default function MyHolding() {
     fetchHistoryHoldings();
   }, []);
 
+  useEffect(() => {
+    fetchMonthlyStats(selectedMonth);
+  }, [selectedMonth]);
+
   const { data: dynamicData } = useRealTimeData(symbols, {
     enabled: symbols.length > 0 && activeTab === 'holdings',
   });
@@ -114,6 +150,7 @@ export default function MyHolding() {
     fetchHoldings();
     fetchOrders();
     fetchHistoryHoldings(1);
+    fetchMonthlyStats(selectedMonth);
     message.success('操作成功');
   };
 
@@ -129,40 +166,76 @@ export default function MyHolding() {
     }
   };
 
-  // 顶部统计卡片
-  const StatsCard = () => (
-    <Card className="mb-6 shadow-sm">
-      <Row gutter={16}>
-        <Col span={8}>
-          <Statistic
-            title="当前持仓"
-            value={totalHoldings}
-            suffix="只"
-            valueStyle={{ color: '#1890ff' }}
-          />
-        </Col>
-        <Col span={8}>
-          <Statistic
-            title="委托记录"
-            value={totalOrders}
-            suffix="条"
-            valueStyle={{ color: '#52c41a' }}
-          />
-        </Col>
-        <Col span={8}>
-          <Statistic
-            title="历史持仓"
-            value={totalHistory}
-            suffix="条"
-            valueStyle={{ color: '#fa8c16' }}
-          />
-        </Col>
-      </Row>
+  const StatsSection = () => (
+    <Card className="mb-[6px] shadow-sm">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-[16px] mb-[8px]">
+        <h2 className="text-[18px] font-medium text-gray-800">交易绩效统计</h2>
+        <DatePicker.MonthPicker
+          value={selectedMonth}
+          onChange={(date) => {
+            if (date) {
+              setSelectedMonth(date);
+            }
+          }}
+          placeholder="选择月份"
+          allowClear={false}
+          className="w-full sm:w-auto"
+        />
+      </div>
+
+      {statsLoading ? (
+        <div className="flex justify-center py-[12px]">
+          <Spin size="large" />
+        </div>
+      ) : (
+        <Row gutter={16}>
+          <Col span={8}>
+            <Statistic
+              title="操作次数"
+              value={monthlyStats?.operation_count ?? 0}
+              suffix="笔"
+              valueStyle={{ color: '#1890ff' }}
+            />
+          </Col>
+          <Col span={8}>
+            <Statistic
+              title="胜率"
+              value={
+                monthlyStats
+                  ? Number((monthlyStats.win_rate * 100).toFixed(2))
+                  : 0
+              }
+              suffix="%"
+              valueStyle={{
+                color:
+                  monthlyStats && monthlyStats.win_rate > 0.5
+                    ? '#f5222d'
+                    : '#52c41a',
+              }}
+            />
+          </Col>
+          <Col span={8}>
+            <Statistic
+              title="盈利"
+              value={monthlyStats?.total_profit ?? 0}
+              prefix="¥"
+              precision={2}
+              valueStyle={{
+                color:
+                  monthlyStats?.total_profit !== undefined &&
+                  monthlyStats.total_profit > 0
+                    ? '#f5222d'
+                    : '#52c41a',
+              }}
+            />
+          </Col>
+        </Row>
+      )}
     </Card>
   );
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="min-h-screen bg-gray-50 p-[12px]">
       <div className="max-w-7xl mx-auto">
         {/* 页面标题和操作按钮 */}
         <div className="flex justify-end items-center p-[12px]">
@@ -175,8 +248,8 @@ export default function MyHolding() {
           </Button>
         </div>
 
-        {/* 统计卡片 */}
-        <StatsCard />
+        {/* 统计区域 */}
+        <StatsSection />
 
         {/* 内容区域 */}
         <Card className="shadow-sm">
@@ -240,8 +313,7 @@ export default function MyHolding() {
           />
         </Card>
 
-        {/* 委托模态框 */}
-        <SelfReflectModal
+        <AddOrderModal
           modalOpen={modalOpen}
           setModalOpen={setModalOpen}
           holdingList={holdingList}

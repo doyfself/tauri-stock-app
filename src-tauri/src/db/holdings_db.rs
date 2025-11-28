@@ -1,6 +1,6 @@
 use crate::db::common::init_database;
 use crate::structs::holdings_structs::{
-    AddHoldingReq, DeleteHoldingReq, Holding, PagedResult, UpdateHoldingReq,
+    AddHoldingReq, DeleteHoldingReq, Holding, MonthlyStats, PagedResult, UpdateHoldingReq,
 };
 use crate::structs::StockError;
 use rusqlite::{params, Connection};
@@ -178,6 +178,59 @@ pub fn query_history_holdings(
         page,
         page_size,
         total_pages,
+    })
+}
+
+pub fn query_monthly_stats(
+    app: &AppHandle,
+    year: i32,
+    month: i32,
+) -> Result<MonthlyStats, StockError> {
+    let conn = get_holdings_db_conn(app)?;
+
+    // 构造该月的起止时间（ISO8601 格式：YYYY-MM-DD）
+    let start_date = format!("{:04}-{:02}-01", year, month);
+    let end_year;
+    let end_month;
+    if month == 12 {
+        end_year = year + 1;
+        end_month = 1;
+    } else {
+        end_year = year;
+        end_month = month + 1;
+    }
+    let end_date = format!("{:04}-{:02}-01", end_year, end_month);
+
+    // 查询当月已卖出的持仓记录统计信息
+    let (total_count, win_count, total_profit): (i32, i32, f64) = conn
+        .query_row(
+            r#"
+            SELECT 
+                COUNT(*),
+                COUNT(CASE WHEN profit > 0 THEN 1 END),
+                COALESCE(SUM(profit), 0)
+            FROM holdings 
+            WHERE status = 0 
+              AND sell_time >= ?1 
+              AND sell_time < ?2
+            "#,
+            params![start_date, end_date],
+            |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)),
+        )
+        .map_err(|e| StockError::DbError(e))?;
+
+    let win_rate = if total_count > 0 {
+        win_count as f64 / total_count as f64
+    } else {
+        0.0
+    };
+
+    Ok(MonthlyStats {
+        year,
+        month,
+        operation_count: total_count,
+        win_rate,
+        total_profit,
     })
 }
 
