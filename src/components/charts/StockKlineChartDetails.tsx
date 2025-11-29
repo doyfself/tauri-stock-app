@@ -9,6 +9,8 @@ import {
   addSelectionApi,
   isSelectionExistsApi,
   deleteSelectionApi,
+  addXueqiuSelectionApi,
+  removeXueqiuSelectionApi,
 } from '@/apis/api';
 import type { SingleStockDetailsType, SelectionItem } from '@/types/response';
 import { useState, useEffect, useMemo } from 'react';
@@ -186,6 +188,7 @@ export default function StockKlineChartDetails({
       };
       const res = await addSelectionApi(selection);
       if (res.data) {
+        addXueqiuSelectionApi(code); // 同步添加到雪球自选
         // 添加成功后刷新自选状态
         await refreshSelectionStatus();
         triggerRefresh();
@@ -200,6 +203,7 @@ export default function StockKlineChartDetails({
     if (res.data) {
       // 删除成功后刷新自选状态
       await refreshSelectionStatus();
+      removeXueqiuSelectionApi(code); // 同步从雪球自选删除
       triggerRefresh();
     } else {
       console.error('删除自选失败');

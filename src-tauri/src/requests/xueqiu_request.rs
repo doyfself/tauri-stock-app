@@ -1,6 +1,7 @@
 use crate::requests::common::create_xueqiu_http_client;
 use crate::structs::xueqiu_structs::{
     MinuteChartResponse, RawBatchQuoteResponse, RawKlineResponse, RawStockDetailResponse,
+    SetSelectionResponse,
 };
 use tauri::AppHandle;
 
@@ -172,4 +173,96 @@ pub async fn fetch_minute_chart(
         .map_err(|e| format!("分时图JSON解析失败: {}", e))?;
 
     Ok(chart_data)
+}
+
+/// 添加股票到自选股组合（雪球）
+pub async fn add_to_watchlist(
+    app: &AppHandle,
+    symbols: &str, // 逗号分隔的股票代码，如 "SH600000,SZ000001"
+) -> Result<SetSelectionResponse, String> {
+    let url = "https://stock.xueqiu.com/v5/stock/portfolio/stock/add.json";
+    println!("添加自选请求URL: {}", url);
+
+    let client =
+        create_xueqiu_http_client(app).map_err(|e| format!("HTTP客户端创建失败: {}", e))?;
+
+    // 构建 POST 表单数据
+    let form_data = [("symbols", symbols)];
+
+    let response = client
+        .post(url)
+        .form(&form_data) // 使用 application/x-www-form-urlencoded
+        .send()
+        .await
+        .map_err(|e| format!("添加自选请求发送失败: {}", e))?;
+
+    if !response.status().is_success() {
+        let status = response.status();
+        let err_msg = if status.as_u16() == 401 || status.as_u16() == 403 {
+            "Cookie已过期或无效，请重新登录。".to_string()
+        } else {
+            format!("添加自选API请求失败，状态码: {}", status)
+        };
+        return Err(err_msg);
+    }
+
+    let result = response
+        .json::<SetSelectionResponse>()
+        .await
+        .map_err(|e| format!("添加自选JSON解析失败: {}", e))?;
+
+    // 检查业务逻辑错误
+    if result.error_code != 0 {
+        return Err(format!(
+            "添加自选失败: {} (错误码: {})",
+            result.error_description, result.error_code
+        ));
+    }
+
+    Ok(result)
+}
+
+/// 从自选股组合中移除股票（雪球）
+pub async fn remove_from_watchlist(
+    app: &AppHandle,
+    symbols: &str, // 逗号分隔的股票代码
+) -> Result<SetSelectionResponse, String> {
+    let url = "https://stock.xueqiu.com/v5/stock/portfolio/stock/cancel.json";
+    println!("删除自选请求URL: {}", url);
+
+    let client =
+        create_xueqiu_http_client(app).map_err(|e| format!("HTTP客户端创建失败: {}", e))?;
+
+    let form_data = [("symbols", symbols)];
+
+    let response = client
+        .post(url)
+        .form(&form_data)
+        .send()
+        .await
+        .map_err(|e| format!("删除自选请求发送失败: {}", e))?;
+
+    if !response.status().is_success() {
+        let status = response.status();
+        let err_msg = if status.as_u16() == 401 || status.as_u16() == 403 {
+            "Cookie已过期或无效，请重新登录。".to_string()
+        } else {
+            format!("删除自选API请求失败，状态码: {}", status)
+        };
+        return Err(err_msg);
+    }
+
+    let result = response
+        .json::<SetSelectionResponse>()
+        .await
+        .map_err(|e| format!("删除自选JSON解析失败: {}", e))?;
+
+    if result.error_code != 0 {
+        return Err(format!(
+            "删除自选失败: {} (错误码: {})",
+            result.error_description, result.error_code
+        ));
+    }
+
+    Ok(result)
 }

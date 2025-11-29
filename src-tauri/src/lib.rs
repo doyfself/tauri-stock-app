@@ -30,6 +30,8 @@ pub fn run() {
             command::xueqiu_command::get_batch_stock_quote,
             command::xueqiu_command::get_single_stock_detail,
             command::xueqiu_command::get_minute_chart,
+            command::xueqiu_command::add_stock_to_watchlist,
+            command::xueqiu_command::remove_stock_from_watchlist,
             command::stock_review_command::get_stock_review_list_cmd,
             command::stock_review_command::add_stock_review_cmd,
             command::stock_review_command::get_single_stock_review_cmd,

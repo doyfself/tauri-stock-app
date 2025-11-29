@@ -1,5 +1,6 @@
 use crate::requests::xueqiu_request::{
-    fetch_minute_chart, fetch_raw_batch_quote, fetch_raw_kline_data, fetch_raw_stock_detail,
+    add_to_watchlist, fetch_minute_chart, fetch_raw_batch_quote, fetch_raw_kline_data,
+    fetch_raw_stock_detail, remove_from_watchlist,
 };
 use crate::structs::xueqiu_structs::{
     GetMinuteDataParams, GetStockDataParams, MinuteChartResponse, RawBatchQuoteData,
@@ -254,4 +255,72 @@ pub async fn get_minute_chart(app: AppHandle, code: &str) -> Result<serde_json::
         "data": items, // serde_json 会自动将 Vec 序列化为 JSON 数组
         "count": count
     }))
+}
+
+/// 添加股票到雪球自选股（支持多个，逗号分隔）
+#[tauri::command]
+pub async fn add_stock_to_watchlist(
+    app: AppHandle,
+    symbols: String,
+) -> Result<serde_json::Value, String> {
+    // 调用底层请求
+    let resp = add_to_watchlist(&app, &symbols)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    if resp.data {
+        let codes: Vec<&str> = symbols.split(',').collect();
+        let count = codes.len();
+
+        Ok(serde_json::json!({
+            "success": true,
+            "message": format!("成功添加 {} 只股票到自选股", count),
+            "data": true,
+            "count": count
+        }))
+    } else {
+        Err(format!(
+            "添加失败：{}",
+            if resp.error_description.is_empty() {
+                "未知错误".to_string()
+            } else {
+                resp.error_description
+            }
+        ))
+    }
+}
+
+/// 从雪球自选股中移除股票（支持多个，但按你的示例，message 中只显示第一个 code）
+#[tauri::command]
+pub async fn remove_stock_from_watchlist(
+    app: AppHandle,
+    symbols: String,
+) -> Result<serde_json::Value, String> {
+    let resp = remove_from_watchlist(&app, &symbols)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    if resp.data {
+        // 按你给的示例：message 中只显示第一个 code（如「SH600000」）
+        let first_code = symbols.split(',').next().unwrap_or(&symbols).to_string();
+
+        let codes: Vec<&str> = symbols.split(',').collect();
+        let count = codes.len();
+
+        Ok(serde_json::json!({
+            "success": true,
+            "message": format!("成功删除代码「{}」的自选股", first_code),
+            "data": true,
+            "count": count
+        }))
+    } else {
+        Err(format!(
+            "删除失败：{}",
+            if resp.error_description.is_empty() {
+                "未知错误".to_string()
+            } else {
+                resp.error_description
+            }
+        ))
+    }
 }

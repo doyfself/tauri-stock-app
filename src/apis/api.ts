@@ -34,6 +34,16 @@ export const getSelectionByCode = (code: string) =>
     { code },
   );
 
+export const addXueqiuSelectionApi = (symbols: string) =>
+  invoke<responseType.InvokeBooleanReturn>('add_stock_to_watchlist', {
+    symbols,
+  });
+
+export const removeXueqiuSelectionApi = (symbols: string) =>
+  invoke<responseType.InvokeBooleanReturn>('remove_stock_from_watchlist', {
+    symbols,
+  });
+
 // 添加自选
 export const addSelectionApi = (selection: {
   code: string;

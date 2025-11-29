@@ -133,3 +133,14 @@ pub struct MinuteChartItem {
     pub timestamp: i64,
     pub volume: i64,
 }
+
+// structs/xueqiu_structs.rs
+
+#[derive(serde::Deserialize, Debug)]
+pub struct SetSelectionResponse {
+    pub data: bool,
+    #[serde(rename = "error_code")]
+    pub error_code: i32,
+    #[serde(rename = "error_description")]
+    pub error_description: String,
+}
