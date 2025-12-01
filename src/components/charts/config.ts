@@ -30,6 +30,11 @@ const klineConfig = {
       period: 30,
       color: '#009688', // 30日均线颜色
     },
+    {
+      name: 'MA60',
+      period: 60,
+      color: '#C9A9A6', // 60日均线颜色
+    },
   ],
   periodSelectOptions: [
     {

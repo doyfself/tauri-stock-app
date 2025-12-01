@@ -144,7 +144,6 @@ export default function MarketAnalysis() {
               <Card
                 key={`market-analysis-${item.code}`}
                 className="shadow-sm hover:shadow-md transition-shadow"
-                bodyStyle={{ padding: '16px' }}
               >
                 <StockKlineChartMain
                   code={item.code}
@@ -294,7 +293,6 @@ export default function MarketAnalysis() {
                         <Card
                           size="small"
                           className="w-full border-0 shadow-none"
-                          bodyStyle={{ padding: '12px 16px' }}
                         >
                           <div className="flex justify-between items-start mb-2">
                             <Text className="text-gray-600">{item.date}</Text>

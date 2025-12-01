@@ -79,10 +79,7 @@ export default function StockAnalysisContent({
         {/* 主要内容区域 */}
         <div className="flex">
           {/* K线图卡片 */}
-          <Card
-            className="bg-gray-800 border-gray-700"
-            bodyStyle={{ padding: '16px' }}
-          >
+          <Card className="bg-gray-800 border-gray-700">
             <StockKlineChartMain
               code={addStockCodePrefix(data.code)}
               width={800}
@@ -93,18 +90,10 @@ export default function StockAnalysisContent({
           </Card>
 
           {/* 详细内容卡片 */}
-          <Card
-            className="bg-gray-800 border-gray-700 flex-1"
-            bodyStyle={{ padding: '24px' }}
-          >
+          <Card className="bg-gray-800 border-gray-700 flex-1">
             <div
-              className="max-w-none"
+              className="max-w-none whitespace-pre-wrap leading-[1.5]"
               dangerouslySetInnerHTML={{ __html: data.description }}
-              style={{
-                color: '#d1d5db',
-                lineHeight: '1.7',
-                fontSize: '15px',
-              }}
             />
           </Card>
         </div>

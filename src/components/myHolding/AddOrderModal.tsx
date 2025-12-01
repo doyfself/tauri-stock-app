@@ -67,11 +67,7 @@ export default function AddOrderModal({
       width={480}
       className="rounded-lg"
     >
-      <Card
-        bordered={false}
-        className="shadow-none"
-        bodyStyle={{ padding: '24px 0' }}
-      >
+      <Card className="shadow-none">
         <Form
           form={form}
           name="order"

@@ -75,10 +75,7 @@ export default function Home() {
         <Row gutter={[24, 24]}>
           {/* 左侧操作卡片 */}
           <Col xs={24} lg={12}>
-            <Card
-              className="bg-gray-800 border-gray-700 h-full"
-              bodyStyle={{ padding: '32px' }}
-            >
+            <Card className="bg-gray-800 border-gray-700 h-full">
               <div className="text-center mb-[24px]">
                 <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-[16px]">
                   <RocketOutlined className="text-white text-2xl" />
@@ -121,10 +118,7 @@ export default function Home() {
 
           {/* 右侧统计卡片 */}
           <Col xs={24} lg={12}>
-            <Card
-              className="bg-gray-800 border-gray-700 h-full"
-              bodyStyle={{ padding: '32px' }}
-            >
+            <Card className="bg-gray-800 border-gray-700 h-full">
               <h3 className="text-[#fff] text-lg font-semibold mb-[24px] flex items-center">
                 <DatabaseOutlined className="mr-[8px] text-blue-400" />
                 数据统计

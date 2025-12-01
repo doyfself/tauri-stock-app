@@ -1,28 +1,14 @@
-import {
-  Input,
-  Button,
-  Modal,
-  Form,
-  type FormProps,
-  DatePicker,
-  Popconfirm,
-  message,
-  Card,
-  Space,
-  Spin,
-} from 'antd';
-import type { Moment } from 'moment';
-import moment from 'moment';
+import { Button, Popconfirm, Card, Spin } from 'antd';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { formatDate } from '@/utils/common';
 import {
   getSelfReflectApi,
   addSelfReflectApi,
   deleteSelfReflectApi,
 } from '@/apis/api';
-import type { SelfReflectItem, SelfReflectListItem } from '@/types/response';
-import HeaderSearch from '@/components/common/HeaderSearch';
+import type { SelfReflectListItem } from '@/types/response';
+import type { RecordItem } from '@/components/myReview/AddRecordModal';
+import AddRecordModal from '@/components/myReview/AddRecordModal';
 
 export default function SelfReflect() {
   const [modalOpen, setModalOpen] = useState(false);
@@ -35,14 +21,11 @@ export default function SelfReflect() {
     setLoading(true);
     try {
       const res = await getSelfReflectApi();
-      console.log(res);
       if (res && res.data) {
         setList(res.data);
         setShowData(res.data.slice(0, 10));
         setMore(res.data.length > 10);
       }
-    } catch {
-      message.error('获取数据失败');
     } finally {
       setLoading(false);
     }
@@ -53,13 +36,8 @@ export default function SelfReflect() {
   }, []);
 
   const deleteThis = async (id: number) => {
-    try {
-      await deleteSelfReflectApi(id);
-      message.success('删除成功');
-      initList();
-    } catch {
-      message.error('删除失败');
-    }
+    await deleteSelfReflectApi(id);
+    initList();
   };
 
   const addReview = () => {
@@ -69,6 +47,10 @@ export default function SelfReflect() {
   const loadMore = () => {
     setShowData(list);
     setMore(false);
+  };
+
+  const onFinish = async (req: RecordItem): Promise<void> => {
+    await addSelfReflectApi({ ...req });
   };
 
   return (
@@ -94,7 +76,7 @@ export default function SelfReflect() {
               <Card
                 key={item.id}
                 className="bg-gray-800 border-gray-700 hover:border-blue-500 transition-colors cursor-pointer"
-                bodyStyle={{ padding: '12px 16px' }}
+                styles={{ body: { padding: '12px 16px' } }}
               >
                 <div className="flex justify-between items-center">
                   <div className="flex items-center space-x-3 flex-1">
@@ -141,160 +123,14 @@ export default function SelfReflect() {
         </Spin>
 
         {/* 新增/编辑模态框 */}
-        <SelfReflectModal
+        <AddRecordModal
           modalOpen={modalOpen}
           setModalOpen={setModalOpen}
           initList={initList}
           initData={null}
+          onFinish={onFinish}
         />
       </div>
     </div>
   );
 }
-
-interface SelfReflectModalProps {
-  modalOpen: boolean;
-  setModalOpen: (val: boolean) => void;
-  initList: () => void;
-  initData: SelfReflectItem | null;
-}
-
-type FieldType = {
-  title: string;
-  stock: {
-    code: string;
-    name: string;
-  };
-  date: Moment;
-  description: string;
-};
-
-export const SelfReflectModal = ({
-  modalOpen,
-  setModalOpen,
-  initList,
-  initData,
-}: SelfReflectModalProps) => {
-  const [form] = Form.useForm();
-  const [submitting, setSubmitting] = useState(false);
-
-  const onFinish: FormProps<FieldType>['onFinish'] = async (values) => {
-    setSubmitting(true);
-    try {
-      let date = values.date.format('YYYY-MM-DD') + ' 15:00:00';
-      date = new Date(date).getTime().toString();
-      const req = {
-        code: values.stock.code || '',
-        title: values.title,
-        date: date,
-        description: values.description,
-      };
-
-      if (initData) {
-        Reflect.set(req, 'id', initData.id);
-      }
-
-      const res = await addSelfReflectApi(req);
-      if (res.data) {
-        message.success(initData ? '更新成功' : '新增成功');
-        initList();
-        setModalOpen(false);
-        form.resetFields();
-      }
-    } catch {
-      message.error(initData ? '更新失败' : '新增失败');
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  useEffect(() => {
-    if (modalOpen && initData) {
-      const fields = {
-        ...initData,
-        stock: {
-          code: initData.code,
-          name: '',
-        },
-        date: moment(formatDate(initData.date, 'YYYY-MM-DD')),
-      };
-      form.setFieldsValue(fields);
-    } else if (modalOpen) {
-      form.resetFields();
-    }
-  }, [modalOpen, initData, form]);
-
-  const handleCancel = () => {
-    form.resetFields();
-    setModalOpen(false);
-  };
-
-  const modalTitle = initData ? '编辑记录' : '新增操作反省';
-
-  return (
-    <Modal
-      title={modalTitle}
-      footer={null}
-      open={modalOpen}
-      onCancel={handleCancel}
-      width={600}
-      destroyOnClose
-    >
-      <Form
-        form={form}
-        name="selfReflectForm"
-        labelCol={{ span: 4 }}
-        wrapperCol={{ span: 20 }}
-        onFinish={onFinish}
-      >
-        <Form.Item<FieldType>
-          label="标题"
-          name="title"
-          rules={[{ required: true, message: '请输入标题!' }]}
-        >
-          <Input placeholder="请输入反省标题" />
-        </Form.Item>
-
-        <Form.Item<FieldType>
-          label="股票代码"
-          name="stock"
-          rules={[{ required: true, message: '请选择股票!' }]}
-        >
-          <HeaderSearch />
-        </Form.Item>
-
-        <Form.Item<FieldType>
-          label="日期"
-          name="date"
-          rules={[{ required: true, message: '请选择日期!' }]}
-        >
-          <DatePicker format="YYYY-MM-DD" className="w-full" />
-        </Form.Item>
-
-        <Form.Item<FieldType>
-          label="详细内容"
-          name="description"
-          rules={[{ required: true, message: '请输入详细解析!' }]}
-        >
-          <Input.TextArea
-            rows={6}
-            placeholder="请输入您的操作反省、经验总结、改进措施等内容..."
-            showCount
-            maxLength={2000}
-          />
-        </Form.Item>
-
-        <Form.Item wrapperCol={{ offset: 4, span: 20 }}>
-          <Space>
-            <Button type="primary" htmlType="submit" loading={submitting}>
-              {submitting ? '提交中...' : '确认提交'}
-            </Button>
-            <Button onClick={handleCancel} disabled={submitting}>
-              取消
-            </Button>
-          </Space>
-        </Form.Item>
-      </Form>
-    </Modal>
-  );
-};

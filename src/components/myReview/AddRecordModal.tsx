@@ -1,0 +1,164 @@
+import {
+  Input,
+  Button,
+  Modal,
+  Form,
+  type FormProps,
+  DatePicker,
+  Space,
+} from 'antd';
+import type { Moment } from 'moment';
+import moment from 'moment';
+import { useEffect, useState } from 'react';
+import { formatDate } from '@/utils/common';
+import HeaderSearch from '@/components/common/HeaderSearch';
+import RichTextEditor from '@/components/common/RichTextEditor';
+export interface RecordItem {
+  id?: number; // 唯一标识符
+  code: string; // 股票名称
+  title: string;
+  date: string; // 股票日期
+  description: string; // 描述
+}
+interface SelfReflectModalProps {
+  modalOpen: boolean;
+  setModalOpen: (val: boolean) => void;
+  initList: () => void;
+  initData: RecordItem | null;
+  onFinish: (req: RecordItem) => Promise<void>;
+}
+
+type FieldType = {
+  title: string;
+  stock: {
+    code: string;
+    name: string;
+  };
+  date: Moment;
+  description: string;
+};
+
+const AddRecordModal = ({
+  modalOpen,
+  setModalOpen,
+  initList,
+  initData,
+  onFinish,
+}: SelfReflectModalProps) => {
+  const [form] = Form.useForm();
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleFinish: FormProps<FieldType>['onFinish'] = async (values) => {
+    setSubmitting(true);
+    try {
+      let date = values.date.format('YYYY-MM-DD') + ' 15:00:00';
+      date = new Date(date).getTime().toString();
+      const req = {
+        code: values.stock.code || '',
+        title: values.title,
+        date: date,
+        description: values.description,
+      };
+
+      if (initData) {
+        Reflect.set(req, 'id', initData.id);
+      }
+
+      await onFinish(req);
+      initList();
+      setModalOpen(false);
+      form.resetFields();
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  useEffect(() => {
+    if (modalOpen && initData) {
+      const fields = {
+        ...initData,
+        stock: {
+          code: initData.code,
+          name: '',
+        },
+        date: moment(formatDate(initData.date, 'YYYY-MM-DD')),
+        description: initData.description,
+      };
+      setTimeout(() => {
+        form.setFieldsValue(fields);
+      }, 1000);
+    } else if (modalOpen) {
+      form.resetFields();
+    }
+  }, [modalOpen, initData, form]);
+
+  const handleCancel = () => {
+    form.resetFields();
+    setModalOpen(false);
+  };
+
+  const modalTitle = initData ? '编辑' : '新增';
+
+  return (
+    <Modal
+      title={modalTitle}
+      footer={null}
+      open={modalOpen}
+      onCancel={handleCancel}
+      width={600}
+    >
+      <Form
+        form={form}
+        name="selfReflectForm"
+        labelCol={{ span: 4 }}
+        wrapperCol={{ span: 20 }}
+        onFinish={handleFinish}
+      >
+        <Form.Item<FieldType>
+          label="标题"
+          name="title"
+          rules={[{ required: true, message: '请输入标题!' }]}
+        >
+          <Input placeholder="请输入反省标题" />
+        </Form.Item>
+
+        <Form.Item<FieldType>
+          label="股票代码"
+          name="stock"
+          rules={[{ required: true, message: '请选择股票!' }]}
+        >
+          <HeaderSearch />
+        </Form.Item>
+
+        <Form.Item<FieldType>
+          label="日期"
+          name="date"
+          rules={[{ required: true, message: '请选择日期!' }]}
+        >
+          <DatePicker format="YYYY-MM-DD" className="w-full" />
+        </Form.Item>
+
+        <Form.Item<FieldType>
+          label="详细内容"
+          name="description"
+          rules={[{ required: true, message: '请输入详细解析!' }]}
+        >
+          <RichTextEditor key={modalOpen ? 'open' : 'closed'} />
+        </Form.Item>
+
+        <Form.Item wrapperCol={{ offset: 4, span: 20 }}>
+          <Space>
+            <Button type="primary" htmlType="submit" loading={submitting}>
+              {submitting ? '提交中...' : '确认提交'}
+            </Button>
+            <Button onClick={handleCancel} disabled={submitting}>
+              取消
+            </Button>
+          </Space>
+        </Form.Item>
+      </Form>
+    </Modal>
+  );
+};
+
+export default AddRecordModal;
