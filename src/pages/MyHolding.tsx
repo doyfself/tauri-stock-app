@@ -23,6 +23,7 @@ import HoldingsCard from '@/components/myHolding/HoldingsCard';
 import OrdersTable from '@/components/myHolding/OrdersTable';
 import HistoryTable from '@/components/myHolding/HistoryTable';
 import AddOrderModal from '@/components/myHolding/AddOrderModal';
+import type { initModalData } from '@/components/myHolding/AddOrderModal';
 
 interface PaginationParams {
   current: number;
@@ -50,6 +51,8 @@ export default function MyHolding() {
     total: 0,
   });
   const [loading, setLoading] = useState(false);
+
+  const [initData, setInitData] = useState<initModalData>(null);
 
   const [selectedMonth, setSelectedMonth] = useState<dayjs.Dayjs>(dayjs());
   const [monthlyStats, setMonthlyStats] = useState<MonthlyStats | null>(null);
@@ -270,9 +273,8 @@ export default function MyHolding() {
                     holdingList={holdingList}
                     dynamicData={dynamicData}
                     loading={loading}
-                    onDeleteSuccess={() => {
-                      fetchHoldings();
-                    }}
+                    setInitData={setInitData}
+                    setModalOpen={setModalOpen}
                   />
                 ),
               },
@@ -316,8 +318,8 @@ export default function MyHolding() {
         <AddOrderModal
           modalOpen={modalOpen}
           setModalOpen={setModalOpen}
-          holdingList={holdingList}
           onOrderSuccess={submitCallBack}
+          initData={initData}
         />
       </div>
     </div>

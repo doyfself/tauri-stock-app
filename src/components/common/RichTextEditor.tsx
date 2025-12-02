@@ -2,8 +2,7 @@
 
 import { AiEditor, AiEditorOptions } from 'aieditor';
 import 'aieditor/dist/style.css';
-
-import { HTMLAttributes, forwardRef, useEffect, useRef } from 'react';
+import { HTMLAttributes, forwardRef, useEffect, useRef, useState } from 'react';
 
 type AIEditorProps = Omit<HTMLAttributes<HTMLDivElement>, 'onChange'> & {
   placeholder?: string;
@@ -26,6 +25,7 @@ export default forwardRef<HTMLDivElement, AIEditorProps>(function AIEditor(
 ) {
   const divRef = useRef<HTMLDivElement>(null);
   const aiEditorRef = useRef<AiEditor | null>(null);
+  const [isComposing, setIsComposing] = useState(false); // 👈 新增状态
 
   useEffect(() => {
     if (!divRef.current) return;
@@ -33,9 +33,9 @@ export default forwardRef<HTMLDivElement, AIEditorProps>(function AIEditor(
     if (!aiEditorRef.current) {
       const aiEditor = new AiEditor({
         element: divRef.current,
-        placeholder: placeholder,
-        content: defaultValue,
-        contentFormat: 'html', // 明确指定格式
+        placeholder,
+        content: defaultValue ?? '',
+        contentFormat: 'html',
         theme: 'dark',
         editorProps: {
           attributes: {
@@ -58,7 +58,8 @@ export default forwardRef<HTMLDivElement, AIEditorProps>(function AIEditor(
           'link',
         ],
         onChange: (ed) => {
-          if (typeof onChange === 'function') {
+          // ✅ 关键：IME 输入中不触发 onChange
+          if (!isComposing && typeof onChange === 'function') {
             onChange(ed.getHtml());
           }
         },
@@ -66,6 +67,23 @@ export default forwardRef<HTMLDivElement, AIEditorProps>(function AIEditor(
       });
 
       aiEditorRef.current = aiEditor;
+
+      // 👇 监听 IME 事件（必须绑定到编辑器内部的 contentEditable 元素）
+      const editableElement = divRef.current.querySelector(
+        '[contenteditable="true"]',
+      );
+      if (editableElement) {
+        editableElement.addEventListener('compositionstart', () => {
+          setIsComposing(true);
+        });
+        editableElement.addEventListener('compositionend', () => {
+          setIsComposing(false);
+          // IME 结束后，立即触发一次 onChange
+          if (typeof onChange === 'function' && aiEditorRef.current) {
+            onChange(aiEditorRef.current.getHtml());
+          }
+        });
+      }
     }
 
     return () => {
@@ -77,6 +95,7 @@ export default forwardRef<HTMLDivElement, AIEditorProps>(function AIEditor(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // 处理 ref 转发
   useEffect(() => {
     if (ref) {
       if (typeof ref === 'function') {
@@ -87,11 +106,15 @@ export default forwardRef<HTMLDivElement, AIEditorProps>(function AIEditor(
     }
   }, [ref]);
 
+  // 同步外部 value（但跳过 IME 期间）
   useEffect(() => {
-    if (aiEditorRef.current && value !== aiEditorRef.current.getMarkdown()) {
-      aiEditorRef.current.setContent(value || '', 'html');
+    if (aiEditorRef.current && !isComposing) {
+      const currentHtml = aiEditorRef.current.getHtml();
+      if (value !== currentHtml) {
+        aiEditorRef.current.setContent(value || '', 'html');
+      }
     }
-  }, [value]);
+  }, [value, isComposing]); // 👈 依赖 isComposing
 
   return <div ref={divRef} {...props} />;
 });

@@ -22,10 +22,7 @@ export default function Home() {
       <HeaderNav />
       <div className="flex-1 flex h-full pt-[40px] pb-[25px]">
         <LeftMenu />
-        <div
-          className="flex-1 h-full pb-[40px] overflow-y-auto"
-          ref={mainContainerRef}
-        >
+        <div className="flex-1 h-full overflow-y-auto" ref={mainContainerRef}>
           <Outlet />
         </div>
       </div>

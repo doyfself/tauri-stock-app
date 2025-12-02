@@ -6,6 +6,12 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import HeaderSearch, { StockValue } from './HeaderSearch';
 import DatabaseImport from '@/components/ImportDbData';
+import { Button } from 'antd';
+import {
+  ArrowLeftOutlined,
+  RedoOutlined,
+  ArrowRightOutlined,
+} from '@ant-design/icons';
 
 export default function HeaderNav() {
   const navigate = useNavigate();
@@ -18,13 +24,45 @@ export default function HeaderNav() {
     // 导航到 K 线页面
     navigate(`/kline/${stock.code}`);
   };
+  const goBack = () => {
+    navigate(-1); // 返回上一历史记录
+  };
+  const goForward = () => {
+    navigate(1);
+  };
+
+  const refreshPage = () => {
+    window.location.reload();
+  };
   return (
     <div className="h-[40px] bg-[#30343A] w-[100vw] flex justify-center items-center absolute">
-      <HeaderSearch
-        value={selectedStock}
-        onChange={handleStockChange}
-        showInHeader={true}
-      />
+      <div className="flex items-center gap-[5px] ml-[10px]">
+        <Button
+          type="text"
+          icon={<ArrowLeftOutlined style={{ color: '#fff' }} />}
+          onClick={goBack}
+          size="small"
+        />
+        <Button
+          type="text"
+          icon={<RedoOutlined style={{ color: '#fff' }} />}
+          onClick={refreshPage}
+          size="small"
+        />
+        <Button
+          type="text"
+          icon={<ArrowRightOutlined style={{ color: '#fff' }} />}
+          onClick={goForward}
+          size="small"
+        />
+      </div>
+      <div className="flex-1 flex justify-center">
+        <HeaderSearch
+          value={selectedStock}
+          onChange={handleStockChange}
+          showInHeader={true}
+        />
+      </div>
       <RightDropdown />
     </div>
   );

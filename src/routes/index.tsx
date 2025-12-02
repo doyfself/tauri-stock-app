@@ -15,7 +15,7 @@ export const routes: RouteObject[] = [
     children: [
       { index: true, element: <Home /> },
       {
-        path: 'kline/:id',
+        path: 'kline/:id/:date?',
         element: <StockDetails />,
       },
       {

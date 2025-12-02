@@ -23,7 +23,7 @@ import {
   EyeOutlined,
   BarChartOutlined,
 } from '@ant-design/icons';
-import moment from 'moment';
+import dayjs, { Dayjs } from 'dayjs';
 import type { MarketAnalysisItem } from '@/types/response';
 import StockKlineChartMain from '@/components/charts/StockKlineChartMain';
 
@@ -213,9 +213,11 @@ export default function MarketAnalysis() {
                     分析日期
                   </label>
                   <DatePicker
-                    value={date ? moment(date) : null}
+                    value={date ? dayjs(date) : null}
+                    onChange={(value: Dayjs | null) => {
+                      setDate(value ? value.format('YYYY-MM-DD') : '');
+                    }}
                     format="YYYY-MM-DD"
-                    onChange={(_, dateString) => setDate(dateString as string)}
                     style={{ width: '100%' }}
                     size="large"
                     suffixIcon={<CalendarOutlined />}
@@ -261,7 +263,10 @@ export default function MarketAnalysis() {
               <Button
                 type="primary"
                 icon={<PlusOutlined />}
-                onClick={() => setIsEditing(true)}
+                onClick={() => {
+                  setIsEditing(true);
+                  setDate(dayjs().format('YYYY-MM-DD'));
+                }}
               >
                 添加分析
               </Button>

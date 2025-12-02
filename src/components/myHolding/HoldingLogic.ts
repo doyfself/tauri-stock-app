@@ -1,4 +1,4 @@
-import type { Moment } from 'moment';
+import type { Dayjs } from 'dayjs';
 import type { HoldingItem } from '@/types/response';
 import {
   addOrderApi,
@@ -14,7 +14,7 @@ export type FieldType = {
     code: string;
     name: string;
   };
-  time: Moment;
+  time: Dayjs;
   cost: number;
   quantity: number;
   action: string;
@@ -92,7 +92,7 @@ export const handleOrderWithHolding = async ({
  */
 const handleBuyAction = async (
   stock: { code: string; name: string },
-  time: Moment,
+  time: Dayjs,
   buyPrice: number,
   buyQuantity: number,
   existingHolding?: HoldingItem,
@@ -149,7 +149,7 @@ const handleBuyAction = async (
  */
 const handleSellAction = async (
   stock: { code: string; name: string },
-  time: Moment,
+  time: Dayjs,
   sellPrice: number,
   sellQuantity: number,
   existingHolding?: HoldingItem,

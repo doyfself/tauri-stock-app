@@ -1,0 +1,41 @@
+/* 恢复富文本中的列表样式 */
+.rich-content ol {
+  list-style-type: decimal !important;
+  padding-left: 1.5rem; /* 或 2rem，根据设计调整 */
+}
+
+.rich-content ul {
+  list-style-type: disc !important;
+  padding-left: 1.5rem;
+}
+
+.rich-content li {
+  margin-bottom: 0.25rem; /* 可选：增加行间距 */
+}
+
+/* 设置 ol 数字颜色为浅灰色（适配暗色主题） */
+.rich-content ol li::marker {
+  color: #cbd5e1; /* Tailwind 的 text-gray-300 */
+  font-weight: bold;
+}
+
+/* 可选：ul 圆点颜色 */
+.rich-content ul li::marker {
+  color: #94a3b8; /* Tailwind 的 text-slate-400 */
+}
+
+/* components/index.css */
+.rich-content a {
+  color: #40a9ff; /* Ant Design 主色蓝 */
+  text-decoration: underline;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.rich-content a:hover {
+  color: #69c0ff; /* 更亮的蓝色 */
+}
+
+.rich-content a:active {
+  color: #1890ff;
+}

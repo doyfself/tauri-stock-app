@@ -7,19 +7,19 @@ import {
   DatePicker,
   Space,
 } from 'antd';
-import type { Moment } from 'moment';
-import moment from 'moment';
+import dayjs, { Dayjs } from 'dayjs'; // ✅ 替换 moment
 import { useEffect, useState } from 'react';
-import { formatDate } from '@/utils/common';
 import HeaderSearch from '@/components/common/HeaderSearch';
 import RichTextEditor from '@/components/common/RichTextEditor';
+
 export interface RecordItem {
-  id?: number; // 唯一标识符
-  code: string; // 股票名称
+  id?: number;
+  code: string;
   title: string;
-  date: string; // 股票日期
-  description: string; // 描述
+  date: string; // 注意：这里 date 是时间戳字符串（如 "1717027200000"）
+  description: string;
 }
+
 interface SelfReflectModalProps {
   modalOpen: boolean;
   setModalOpen: (val: boolean) => void;
@@ -34,7 +34,7 @@ type FieldType = {
     code: string;
     name: string;
   };
-  date: Moment;
+  date: Dayjs; // ✅ 类型改为 Dayjs
   description: string;
 };
 
@@ -45,23 +45,30 @@ const AddRecordModal = ({
   initData,
   onFinish,
 }: SelfReflectModalProps) => {
-  const [form] = Form.useForm();
+  const [form] = Form.useForm<FieldType>();
   const [submitting, setSubmitting] = useState(false);
 
   const handleFinish: FormProps<FieldType>['onFinish'] = async (values) => {
     setSubmitting(true);
     try {
-      let date = values.date.format('YYYY-MM-DD') + ' 15:00:00';
-      date = new Date(date).getTime().toString();
-      const req = {
+      // ✅ 使用 dayjs 设置 15:00:00 并转时间戳
+      const timestamp = values.date
+        .hour(15)
+        .minute(0)
+        .second(0)
+        .millisecond(0)
+        .valueOf()
+        .toString();
+
+      const req: RecordItem = {
         code: values.stock.code || '',
         title: values.title,
-        date: date,
+        date: timestamp, // 存储为时间戳字符串
         description: values.description,
       };
 
-      if (initData) {
-        Reflect.set(req, 'id', initData.id);
+      if (initData?.id) {
+        req.id = initData.id;
       }
 
       await onFinish(req);
@@ -75,18 +82,23 @@ const AddRecordModal = ({
 
   useEffect(() => {
     if (modalOpen && initData) {
-      const fields = {
-        ...initData,
+      // ✅ 将时间戳字符串转换为 Dayjs 对象用于表单回显
+      const dateValue = dayjs(Number(initData.date)); // 转成毫秒数再构造
+
+      const fields: Partial<FieldType> = {
+        title: initData.title,
         stock: {
           code: initData.code,
-          name: '',
+          name: '', // HeaderSearch 可能只用 code
         },
-        date: moment(formatDate(initData.date, 'YYYY-MM-DD')),
+        date: dateValue,
         description: initData.description,
       };
+
+      // 异步设置字段值（避免 Warning: Cannot update a component while rendering）
       setTimeout(() => {
         form.setFieldsValue(fields);
-      }, 1000);
+      }, 0);
     } else if (modalOpen) {
       form.resetFields();
     }
@@ -113,6 +125,9 @@ const AddRecordModal = ({
         labelCol={{ span: 4 }}
         wrapperCol={{ span: 20 }}
         onFinish={handleFinish}
+        initialValues={{
+          date: dayjs(), // 默认今天
+        }}
       >
         <Form.Item<FieldType>
           label="标题"

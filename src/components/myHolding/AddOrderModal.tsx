@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import dayjs from 'dayjs';
 import {
   Modal,
   Form,
@@ -12,23 +13,51 @@ import {
 import type { FormProps } from 'antd';
 import { handleOrderWithHolding, type FieldType } from './HoldingLogic';
 import HeaderSearch from '@/components/common/HeaderSearch';
-import type { HoldingItem } from '@/types/response';
+
+export type initModalData = {
+  code: string;
+  quantity: number;
+  action: '1' | '0';
+} | null;
 
 interface AddOrderModalProps {
   modalOpen: boolean;
   setModalOpen: (val: boolean) => void;
   onOrderSuccess: () => void;
-  holdingList: HoldingItem[];
+  initData: initModalData;
 }
 
 export default function AddOrderModal({
   modalOpen,
   setModalOpen,
   onOrderSuccess,
+  initData,
 }: AddOrderModalProps) {
-  const [form] = Form.useForm();
+  const [form] = Form.useForm<FieldType>();
   const [submitting, setSubmitting] = useState(false);
   const [actionType, setActionType] = useState<'1' | '0'>('1');
+
+  // 每次 modal 打开时重置并设置初始值
+  useEffect(() => {
+    if (modalOpen) {
+      const today = dayjs();
+      const initialValues: Partial<FieldType> = {
+        time: today,
+      };
+
+      if (initData) {
+        initialValues.stock = { code: initData.code, name: '' };
+        initialValues.action = initData.action;
+        initialValues.quantity = initData.quantity;
+        setActionType(initData.action);
+      } else {
+        initialValues.action = '1';
+        setActionType('1');
+      }
+
+      form.setFieldsValue(initialValues);
+    }
+  }, [modalOpen, initData, form]);
 
   const onFinish: FormProps<FieldType>['onFinish'] = async (values) => {
     setSubmitting(true);
@@ -63,7 +92,6 @@ export default function AddOrderModal({
       footer={null}
       open={modalOpen}
       onCancel={() => setModalOpen(false)}
-      destroyOnClose
       width={480}
       className="rounded-lg"
     >
@@ -74,7 +102,7 @@ export default function AddOrderModal({
           layout="vertical"
           onFinish={onFinish}
           autoComplete="off"
-          initialValues={{ action: '1' }}
+          // 不再用 initialValues，改用 useEffect + setFieldsValue 更可靠
         >
           <Form.Item<FieldType>
             label="选择股票"
@@ -103,6 +131,7 @@ export default function AddOrderModal({
           >
             <Radio.Group
               onChange={(e) => setActionType(e.target.value)}
+              value={actionType}
               buttonStyle="solid"
             >
               <Radio.Button

@@ -4,6 +4,8 @@ import StockKlineChartMain from '@/components/charts/StockKlineChartMain';
 import { LeftOutlined, EditOutlined } from '@ant-design/icons';
 import { Button, Card, Spin } from 'antd';
 import { useNavigate } from 'react-router-dom';
+import './index.css';
+import { useEffect, useRef } from 'react';
 
 interface DetailContentType {
   id: number; // 唯一标识符
@@ -26,6 +28,34 @@ export default function StockAnalysisContent({
   onEdit,
 }: StockReviewDetailContentProps) {
   const navigate = useNavigate();
+  const contentRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const handleLinkClick = (event: Event) => {
+      const target = event.target as HTMLElement;
+      if (target.tagName === 'A') {
+        event.preventDefault();
+        let href = target.getAttribute('href');
+        if (href) {
+          if (!href.startsWith('/')) {
+            href = '/' + href;
+          }
+          console.log(`/kline${href}`);
+          navigate(`/kline${href}`);
+        }
+      }
+    };
+
+    const contentEl = contentRef.current;
+    if (contentEl) {
+      contentEl.addEventListener('click', handleLinkClick);
+    }
+
+    return () => {
+      if (contentEl) {
+        contentEl.removeEventListener('click', handleLinkClick);
+      }
+    };
+  }, [navigate, data?.description]);
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-900 flex items-center justify-center">
@@ -92,7 +122,8 @@ export default function StockAnalysisContent({
           {/* 详细内容卡片 */}
           <Card className="bg-gray-800 border-gray-700 flex-1">
             <div
-              className="max-w-none whitespace-pre-wrap leading-[1.5]"
+              ref={contentRef}
+              className="max-w-none whitespace-pre-wrap leading-[1.8] rich-content"
               dangerouslySetInnerHTML={{ __html: data.description }}
             />
           </Card>
