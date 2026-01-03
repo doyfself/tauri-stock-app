@@ -17,7 +17,7 @@ const backgroundConfig = {
   rightPadding: 50,
   yTopPadding: 10,
   yBottomReserve: 45,
-  totalDataCount: 240, // 固定240条数据
+  totalDataCount: 240,
 };
 
 const StockKlineChartTimeLine = ({
@@ -26,8 +26,12 @@ const StockKlineChartTimeLine = ({
   code,
 }: StockMinuteChartProps) => {
   const [minuteData, setMinuteData] = useState<StockMinuteItem[]>([]);
+  const [hoverInfo, setHoverInfo] = useState<{
+    x: number;
+    y: number;
+    percent: number | null;
+  } | null>(null);
 
-  // 数据请求
   const fetchMinuteData = async () => {
     try {
       const response = await getMinuteDataByCode(code);
@@ -44,39 +48,32 @@ const StockKlineChartTimeLine = ({
 
   useInterval(fetchMinuteData, 6000);
 
-  // 计算数据中的最大/最小涨跌幅（保留原始值，仅用于计算Y轴范围）
   const { maxPercentData, minPercentData } = useMemo(() => {
     if (minuteData.length === 0)
       return { maxPercentData: 0, minPercentData: 0 };
-
     return minuteData.reduce(
       (acc, item) => ({
-        maxPercentData: Math.max(acc.maxPercentData, item.percent), // 不取整
-        minPercentData: Math.min(acc.minPercentData, item.percent), // 不取整
+        maxPercentData: Math.max(acc.maxPercentData, item.percent),
+        minPercentData: Math.min(acc.minPercentData, item.percent),
       }),
       { maxPercentData: -Infinity, minPercentData: Infinity },
     );
   }, [minuteData]);
 
-  // 计算Y轴范围（仍用整数确保背景网格对齐）
   const { yMax, yMin } = useMemo(() => {
     const priceLimit = getStockPriceRangeByCode(code);
-    // 基于原始数据计算留白（向上/向下取整确保包含所有数据）
     const upperWithPadding = Math.ceil(maxPercentData) + 1;
     const lowerWithPadding = Math.floor(minPercentData) - 1;
-
     const symmetricRange = Math.max(
       Math.abs(upperWithPadding),
       Math.abs(lowerWithPadding),
     );
-
     return {
       yMax: Math.min(Math.round(symmetricRange), priceLimit),
       yMin: Math.max(-Math.round(symmetricRange), -priceLimit),
     };
   }, [maxPercentData, minPercentData, code]);
 
-  // X轴坐标计算（保持均匀分布）
   const getXByIndex = (index: number): number => {
     const validWidth =
       width - backgroundConfig.leftPadding - backgroundConfig.rightPadding;
@@ -84,34 +81,70 @@ const StockKlineChartTimeLine = ({
     return backgroundConfig.leftPadding + index * step;
   };
 
-  // Y轴坐标计算（核心修正：使用原始percent值）
   const getYByPercent = (percent: number): number => {
     const validHeight =
       height - backgroundConfig.yTopPadding - backgroundConfig.yBottomReserve;
-    const percentRange = yMax - yMin; // 背景网格总范围（整数）
-    const pixelPerPercent = validHeight / percentRange; // 每1%对应的像素高度
-
-    // 直接用原始percent计算，不做取整（确保精度）
+    const percentRange = yMax - yMin;
+    const pixelPerPercent = validHeight / percentRange;
     const distanceFromTop = (yMax - percent) * pixelPerPercent;
     return backgroundConfig.yTopPadding + distanceFromTop;
   };
 
-  // 生成分时线路径（使用原始percent值）
   const getPathData = (): string => {
     if (minuteData.length === 0) return '';
-
     return minuteData.reduce((path, item, index) => {
       if (index >= backgroundConfig.totalDataCount) return path;
-
       const x = getXByIndex(index);
-      const y = getYByPercent(item.percent); // 直接使用原始值
-
+      const y = getYByPercent(item.percent);
       return index === 0 ? `M ${x} ${y}` : `${path} L ${x} ${y}`;
     }, '');
   };
 
+  const handleMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
+
+    const { leftPadding, rightPadding, yTopPadding, yBottomReserve } =
+      backgroundConfig;
+
+    // 限制在绘图区域（X方向）
+    if (mouseX < leftPadding || mouseX > width - rightPadding) {
+      setHoverInfo(null);
+      return;
+    }
+
+    // Y 方向也限制在有效区域
+    const minY = yTopPadding;
+    const maxY = height - yBottomReserve;
+    if (mouseY < minY || mouseY > maxY) {
+      setHoverInfo(null);
+      return;
+    }
+
+    // 👇 关键：从 mouseY 反推 percent
+    const validHeight = height - yTopPadding - yBottomReserve;
+    const percentRange = yMax - yMin;
+    const pixelPerPercent = validHeight / percentRange;
+
+    const percent = yMax - (mouseY - yTopPadding) / pixelPerPercent;
+
+    setHoverInfo({
+      x: mouseX,
+      y: mouseY, // 👈 直接用 mouseY，不是 getYByPercent(percent)
+      percent,
+    });
+  };
+
   return (
-    <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`}>
+    <svg
+      width={width}
+      height={height}
+      viewBox={`0 0 ${width} ${height}`}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={() => setHoverInfo(null)}
+      style={{ cursor: 'crosshair' }}
+    >
       <StockKlineChartTimeBg
         width={width}
         height={height}
@@ -131,6 +164,34 @@ const StockKlineChartTimeLine = ({
           strokeWidth={1.5}
           strokeLinecap="round"
         />
+      )}
+
+      {/* Hover 横线 + 百分比标签 */}
+      {hoverInfo && (
+        <>
+          {/* 横线：从左到右，Y = 鼠标 Y */}
+          <line
+            x1={backgroundConfig.leftPadding}
+            y1={hoverInfo.y}
+            x2={width - backgroundConfig.rightPadding}
+            y2={hoverInfo.y}
+            stroke="#aaa"
+            strokeWidth={1}
+            strokeDasharray="4,2"
+          />
+          {/* 百分比标签 */}
+          {hoverInfo.percent && (
+            <text
+              x={width - backgroundConfig.rightPadding + 8}
+              y={hoverInfo.y}
+              fill={hoverInfo.percent >= 0 ? '#52c41a' : '#ff4d4f'}
+              fontSize="12"
+              dominantBaseline="middle"
+            >
+              {hoverInfo.percent.toFixed(2)}%
+            </text>
+          )}
+        </>
       )}
     </svg>
   );

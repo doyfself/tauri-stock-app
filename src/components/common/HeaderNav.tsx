@@ -36,34 +36,34 @@ export default function HeaderNav() {
   };
   return (
     <div className="h-[40px] bg-[#30343A] w-[100vw] flex justify-center items-center absolute">
-      <div className="flex items-center gap-[5px] ml-[10px]">
-        <Button
-          type="text"
-          icon={<ArrowLeftOutlined style={{ color: '#fff' }} />}
-          onClick={goBack}
-          size="small"
-        />
-        <Button
-          type="text"
-          icon={<RedoOutlined style={{ color: '#fff' }} />}
-          onClick={refreshPage}
-          size="small"
-        />
-        <Button
-          type="text"
-          icon={<ArrowRightOutlined style={{ color: '#fff' }} />}
-          onClick={goForward}
-          size="small"
-        />
+      <HeaderSearch
+        value={selectedStock}
+        onChange={handleStockChange}
+        showInHeader={true}
+      />
+      <div className="absolute right-[20px] flex items-center">
+        <div className="flex items-center gap-[5px] ml-[10px]">
+          <Button
+            type="text"
+            icon={<ArrowLeftOutlined style={{ color: '#fff' }} />}
+            onClick={goBack}
+            size="small"
+          />
+          <Button
+            type="text"
+            icon={<RedoOutlined style={{ color: '#fff' }} />}
+            onClick={refreshPage}
+            size="small"
+          />
+          <Button
+            type="text"
+            icon={<ArrowRightOutlined style={{ color: '#fff' }} />}
+            onClick={goForward}
+            size="small"
+          />
+        </div>
+        <RightDropdown />
       </div>
-      <div className="flex-1 flex justify-center">
-        <HeaderSearch
-          value={selectedStock}
-          onChange={handleStockChange}
-          showInHeader={true}
-        />
-      </div>
-      <RightDropdown />
     </div>
   );
 }
@@ -84,7 +84,7 @@ function RightDropdown() {
   return (
     <>
       <Dropdown menu={{ items }}>
-        <SettingOutlined className="text-[#fff] absolute right-[20px]" />
+        <SettingOutlined className="text-[#fff] ml-[10px]" />
       </Dropdown>
       <UpdateCookie isModalOpen={isModalOpen} setIsModalOpen={setIsModalOpen} />
       <DatabaseImport
